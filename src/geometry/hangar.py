@@ -341,7 +341,7 @@ if __name__ == "__main__":
 
     
     # 4. Visualiser
-    #fig, ax = hangar.dessiner("Hangar avec points de collecte (démonstration)")
+    fig, ax = hangar.dessiner("Hangar avec points de collecte (démonstration)")
     
     # Ajouter des annotations pour expliquer
     """ 
