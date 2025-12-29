@@ -97,6 +97,101 @@ class GraphCollect:
         plt.tight_layout()
         plt.show()
     #end visualiser
+    def visualiser_graphe_schematique(self):
+        """
+        Visualise le graphe avec un layout circulaire pour plus de clarté
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7))
+        
+        # 1. Hangar avec points réels (optionnel)
+        self.hangar.dessiner("Points dans le hangar")
+        
+        # 2. Graphe schématique
+        ax2.set_title("Graphe schématique - Layout circulaire")
+        
+        # Layout circulaire pour éviter les superpositions
+        pos = nx.circular_layout(self.graph_nx)
+        
+        # 2.1 Dessiner les nœuds
+        couleurs = []
+        labels = {}
+        for i in range(self.n):
+            # Couleur selon type d'allée
+            if self.graph_nx.nodes[i]['sens'] == 1:
+                couleurs.append('red')  # Montante
+            else:
+                couleurs.append('blue')  # Descendante
+            
+            # Label avec informations
+            labels[i] = f"{self.graph_nx.nodes[i]['label']}"
+        
+        nx.draw_networkx_nodes(self.graph_nx, pos, ax=ax2,
+                            node_size=600,
+                            node_color=couleurs,
+                            edgecolors='black',
+                            linewidths=2)
+        
+        # 2.2 Dessiner les labels
+        nx.draw_networkx_labels(self.graph_nx, pos, labels, ax=ax2,
+                            font_size=11, font_weight='bold')
+        
+        # 2.3 Dessiner les arcs
+        arcs_a_dessiner = []
+        poids_arcs = {}
+        
+        for i in range(self.n):
+            for j in range(self.n):
+                if i != j and self.matrice[i][j] < float('inf'):
+                    arcs_a_dessiner.append((i, j))
+                    poids_arcs[(i, j)] = f"{self.matrice[i][j]:.1f}m"
+        
+        # Dessiner les arcs avec flèches
+        nx.draw_networkx_edges(self.graph_nx, pos,
+                            edgelist=arcs_a_dessiner,
+                            ax=ax2,
+                            arrowstyle='->',
+                            arrowsize=20,
+                            edge_color='gray',
+                            width=1.5,
+                            alpha=0.7,
+                            connectionstyle='arc3,rad=0.1')  # Légère courbure
+        
+        # Afficher les poids (seulement quelques-uns pour lisibilité)
+        if len(poids_arcs) <= 15:  # Si peu d'arcs, tous les afficher
+            nx.draw_networkx_edge_labels(self.graph_nx, pos,
+                                        edge_labels=poids_arcs,
+                                        ax=ax2, font_size=9)
+        else:
+            # Sinon, afficher seulement les poids des arcs les plus courts
+            edge_labels_select = {}
+            for i in range(self.n):
+                # Trouver l'arc le plus court partant de chaque nœud
+                distances = [(j, self.matrice[i][j]) 
+                            for j in range(self.n) 
+                            if i != j and self.matrice[i][j] < float('inf')]
+                if distances:
+                    j, dist = min(distances, key=lambda x: x[1])
+                    edge_labels_select[(i, j)] = f"{dist:.1f}m"
+            
+            nx.draw_networkx_edge_labels(self.graph_nx, pos,
+                                        edge_labels=edge_labels_select,
+                                        ax=ax2, font_size=9)
+        
+        # 2.4 Informations
+        info_text = f"Points: {self.n}\n"
+        info_text += f"Arcs possibles: {len(arcs_a_dessiner)}/{self.n*(self.n-1)}\n"
+        info_text += f"● Rouge: allées montantes\n"
+        info_text += f"● Bleu: allées descendantes"
+        
+        ax2.text(0.02, 0.02, info_text, transform=ax2.transAxes,
+                fontsize=10, verticalalignment='bottom',
+                bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
+        
+        ax2.axis('on')
+        ax2.grid(True, alpha=0.2)
+        
+        plt.tight_layout()
+        plt.show()
 
     def _dessiner_graphe_oriented(self,ax):
         """

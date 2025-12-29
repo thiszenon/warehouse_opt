@@ -29,13 +29,16 @@ def main():
     print("Construction du graphe...")
     graphe = GraphCollect(hangar, commande)
 
+    #version schématique du graphe
+    graphe.visualiser_graphe_schematique()
+
     # Visualiser un chemin spécifique
     print("visualisation d'un chemin spécifique...")
-    graphe.visualiser_chemin_sur_hangar(('A',1), ('B',47))
+    #graphe.visualiser_chemin_sur_hangar(('A',1), ('B',47))
 
     # visualiser tous les chemins sur le meme hangar
     print("\nVisualisation de tous les chemins...")
-    graphe.visualiser_tous_chemins_sur_hangar()
+    #graphe.visualiser_tous_chemins_sur_hangar()
 
     #visualisation par paires
     print("\nVisualisation par paires...")
@@ -43,7 +46,7 @@ def main():
 
     
     # 4. Afficher les infos
-    graphe.afficher_infos()
+    #graphe.afficher_infos()
     
     """# 5. Visualiser
     print("\nVisualisation...")
