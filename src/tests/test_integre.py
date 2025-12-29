@@ -12,7 +12,7 @@ from geometry.hangar import Hangar
 from graph import GraphCollect
 
 def main():
-    # 1. Créer le hangar (VOTRE CODE)
+    # 1. Créer le hangar 
     hangar = Hangar(Longueur=90, largeur_allee=5, r=2)
     
     # 2. Définir une commande
@@ -28,13 +28,29 @@ def main():
     # 3. Créer le graphe
     print("Construction du graphe...")
     graphe = GraphCollect(hangar, commande)
+
+    # Visualiser un chemin spécifique
+    print("visualisation d'un chemin spécifique...")
+    graphe.visualiser_chemin_sur_hangar(('A',1), ('B',47))
+
+    # visualiser tous les chemins sur le meme hangar
+    print("\nVisualisation de tous les chemins...")
+    graphe.visualiser_tous_chemins_sur_hangar()
+
+    #visualisation par paires
+    print("\nVisualisation par paires...")
+    #graphe.visualiser_chemins_par_paires()
+
     
     # 4. Afficher les infos
     graphe.afficher_infos()
     
-    # 5. Visualiser
+    """# 5. Visualiser
     print("\nVisualisation...")
     graphe.visualiser()
+    """
+    #voir tous les chemins
+    #graphe.visuliser_tous_chemins()
 
 if __name__ == "__main__":
     main()

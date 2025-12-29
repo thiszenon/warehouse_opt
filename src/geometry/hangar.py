@@ -24,7 +24,7 @@ class Hangar:
         self.sens = {'H':-1, 'G':1, 'F':-1, 'E':1,'D':-1,'C':1,'B':-1,'A':1}
 
         #Niveaux horizontaux
-        self.niveaux = {'N1': 0, 'N2': 50, 'N3':100}
+        self.niveaux = {'N1': 0, 'N2': Longueur/2, 'N3':Longueur}
 
         #Calcul des centres d'allées
         self.centres = {}
@@ -108,9 +108,14 @@ class Hangar:
         self.points[(allee, n)] = (x, y)
     #end _ajouter_point
 
-    def dessiner(self, titre="hangar avec points de collecte"):
+    def dessiner(self, titre="hangar avec points de collecte",ax=None):
         """Dessine le hangar avec ses points."""
-        fig, ax = plt.subplots(figsize=(14,8))
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(14,8))
+            retourner_fig = True
+        else:
+            retourner_fig = False
+
 
         #offset par allée pour eviter les superpositions
         offsets = {'H':0.0, 'G':0.1,'F':0.2,'E':0.3,'D':0.4,'C':0.5,'B':0.6,'A':0.7}
@@ -244,7 +249,8 @@ class Hangar:
             """
 
             plt.tight_layout()
-            return fig, ax
+            if retourner_fig:
+                return fig, ax
     
 #################### Calcul distances 
     def _accessible_verticalement(self, y_start, y_end, allee):
@@ -291,6 +297,73 @@ class Hangar:
         if not distances:
             return float('inf')
         return min(distances)
+    #end distance
+
+    def tracer_chemin(self, p,q,ax=None, couleur='green', style='-', alpha=0.7, linewidth=2):
+        """
+        Cette methode trace et retourne le chemin entre deux points p et q
+        
+        :param self: Description
+        :param p: Description
+        :param q: Description
+        :param ax: Description
+        :param couleur: Description
+        :param style: Description
+        :param alpha: Description
+        Returns:
+            dict : {'distance': float, 'chemin':list, 'segments': list}
+        """
+        if p==q:
+            return {'distance':0, 'chemin':[], 'segments':[]}
+        x_p, y_p = self.points[p]
+        x_q, y_q = self.points[q]
+        allee_p, _ =p
+        allee_q, _ = q
+        chemins_possibles = []
+
+        #cas même allée
+        if allee_p == allee_q and self._accessible_verticalement(y_p, y_q, allee_p):
+            return {
+                'distance': abs(y_q - y_p),
+                'chemin': [(x_p,y_p), (x_p,y_q)],
+                'segments': [f"Allée {allee_p}: ({y_p} -> {y_q})"],
+                'type': 'vertical_direct'
+            }
+        #cas passage par niveaux
+        for non_niveau, y_n in self.niveaux.items():
+            if (self._accessible_verticalement(y_p, y_n,allee_p) and self._accessible_verticalement(y_n, y_q, allee_q)):
+                distance = abs(y_n - y_p) + abs(x_q - x_p) + abs(y_n - y_q)
+                chemin = [
+                    (x_p, y_p), #point départ
+                    (x_p, y_n), #montee/descente au niveau
+                    (x_q, y_n),# deplacement horizontal
+                    (x_q,y_q) #Montéé /descente au point d'arrivée
+                ]
+
+                chemins_possibles.append({
+                    'distance':distance,
+                    'chemin': chemin,
+                    'niveau': non_niveau,
+                    'y_niveau': y_n,
+                    'segments':[
+                        f"Allée {allee_p}: ({y_p} -> {y_n})",
+                        f"Niveau {non_niveau}: ({x_p} -> {x_q})",
+                        f"Allée {allee_q}: ({y_n} -> {y_q})"
+                    ]
+                })
+        if not chemins_possibles:
+            return {'distance': float('inf'), 'chemin':[], 'segments': []}
+        #prendre le chemin le plus court jusque là
+        meilleur = min(chemins_possibles, key=lambda x : x['distance'])
+
+        #tracer si un axe est fourni
+        if ax is not None:
+            x_vals = [point[0] for point in meilleur['chemin']]
+            y_vals = [point[1] for point in meilleur['chemin']]
+            ax.plot(x_vals, y_vals, style, color=couleur, linewidth=2, alpha=alpha, marker='o',markersize=4, markerfacecolor=couleur)
+        return meilleur
+    
+
 
 
 
