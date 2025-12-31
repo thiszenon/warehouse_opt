@@ -1,6 +1,8 @@
 import csv
 from typing import List, Tuple, Dict
 from pathlib import Path
+import pandas as pd
+
 
 def create_commandes(points: List[Tuple[str,int]], size:int) -> Dict[int, List[Tuple[str,int]]]:
     """
@@ -23,3 +25,9 @@ def sauvegarder_commandes(commandes, file_name_to_save):
         for cid, points in commandes.items():
             for allee, pos in points:
                 writer.writerow([cid,allee,pos])
+
+def get_commandes(csv_file="src/data/commandes_10points.csv",command_id=1, n_points=10):
+    """Recupère n points d'une commande"""
+    dataF = pd.read_csv(csv_file)
+    command_df=dataF[dataF['commande_id']== command_id].head(n_points)
+    return list(zip(command_df['allee'],dataF['position']))

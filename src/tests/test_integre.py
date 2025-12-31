@@ -11,18 +11,14 @@ sys.path.insert(0, parent_dir)
 from geometry.hangar import Hangar
 from graph import GraphCollect
 
+from src.data.commandes import get_commandes
+
 def main():
     # 1. Créer le hangar 
     hangar = Hangar(Longueur=90, largeur_allee=5, r=2)
     
     # 2. Définir une commande
-    commande = [
-        ('A', 1),
-        ('A', 8),
-        ('B', 47),
-        ('C', 3),
-        ('H', 24)
-    ]
+    commande =get_commandes()
     hangar.placer_commande(commande=commande)
     
     # 3. Créer le graphe
@@ -34,7 +30,7 @@ def main():
 
     # Visualiser un chemin spécifique
     print("visualisation d'un chemin spécifique...")
-    #graphe.visualiser_chemin_sur_hangar(('A',1), ('B',47))
+    graphe.visualiser_chemin_sur_hangar(('DD',18), ('F',41))
 
     # visualiser tous les chemins sur le meme hangar
     print("\nVisualisation de tous les chemins...")
@@ -46,7 +42,7 @@ def main():
 
     
     # 4. Afficher les infos
-    #graphe.afficher_infos()
+    graphe.afficher_infos()
     
     """# 5. Visualiser
     print("\nVisualisation...")

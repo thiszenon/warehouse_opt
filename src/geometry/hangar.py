@@ -19,9 +19,13 @@ class Hangar:
 
         #Allées de gauche à droite
         self.allees = ['H','G','F','E','D','C','B','A']
+        self.allees_speciales = ['BB','CC','DD','EE','FF','GG','HH','AA']
+        self.allees_toutes = self.allees + self.allees_speciales
 
         #sens de circulation (-1: descente, +1: montée)
-        self.sens = {'H':-1, 'G':1, 'F':-1, 'E':1,'D':-1,'C':1,'B':-1,'A':1}
+        self.sens = {'H':-1, 'G':1, 'F':-1, 'E':1,'D':-1,'C':1,'B':-1,'A':1,
+                     'AB':-1,'BB':-1, 'CC':1, 'DD':-1,'EE':1, 'FF':-1,'GG':1,'HH':-1
+        }
 
         #Niveaux horizontaux
         self.niveaux = {'N1': 0, 'N2': Longueur/2, 'N3':Longueur}
@@ -78,28 +82,62 @@ class Hangar:
     #end palcer_commande
 
     def calculer_coordonnees(self, allee, n):
-        """Nouvelle méthode : calcule les coordonnées exactes d'un point."""
-        if allee not in self.allees:
-            raise ValueError(f"Allée {allee} invalide")
+        """calcule les coordonnées exactes d'un point."""
+
+        #1. Identifier l'allée de base et le type
+        allee_base = allee
+        is_special = False
+        zone = None
+
+        if len(allee) == 2: #code à 2 lettres
+            is_special = True
+            if allee in ['BB','DD','FF','HH','AB']:
+                #descentes spéciales (N3->N2)
+                allee_base = allee[1] # 'B' pour 'BB' et 'AB'
+                zone= 'N3_N2'
+            elif allee in ['CC','EE','GG']:
+                #Montantes spéciales (N2->N3)
+                allee_base = allee[0] # 'C' pour 'cc', etc
+                zone = 'N2_N3'
+            else:
+                raise ValueError(f"Code d'allée inconnu: {allee}")
+            
+        #validation
+        if allee_base not in self.allees:
+            raise ValueError(f"Allée {allee} (base: {allee_base}) invalide")
         
-        k = self.allees.index(allee)
+        #2. Calcul de x
+        k = self.allees.index(allee_base)
         largeur_couloir = self.largeur_allee*0.8 
         marge = (self.largeur_allee - largeur_couloir)/2
         
-        # NOUVEAU CALCUL : Points sur les BORDS, pas au centre ± largeur/2
+        # Points sur les BORDS, pas au centre ± largeur/2
         if n % 2 == 1:  # Point impair → bord DROIT
             x = (k * self.largeur_allee + marge) + largeur_couloir  # Bord droit de l'allée
         else:  # Point pair → bord GAUCHE
             x = k * self.largeur_allee + marge # Bord gauche de l'allée
         
-        # Calcul de y (inchangé mais clarifié)
+        # Calcul de y 
         p = (n + 1) // 2  # Numéro de la paire
-        
-        if self.sens[allee] == 1:  # Montée
-            y = self.r * p - self.r / 2  # 1, 3, 5, ..., 99
-        else:  # Descente
-            # CORRECTION : Commence en haut (99) et descend
-            y = self.Longueur- (self.r * p - self.r / 2)  # 99, 97, 95, ..., 1
+
+        if is_special:
+            if zone == 'N3_N2':
+                #descente special : commence en haut (N3)
+                y = self.Longueur - (self.r*p - self.r/2)
+                #limiter à la zone N3->N2 (haut du hangar)
+                y= max(y, self.Longueur /2)
+            elif zone == 'N2_N3':
+                #Montante speciale : commence au milieu (N2)
+                y= self.Longueur/2 + (self.r*p - self.r /2)
+                #limiter à la zone N2->N3
+                y = min(y, self.Longueur)
+        else:
+            #Point normal
+            if self.sens[allee_base] == 1:  # Montée
+                y = self.r * p - self.r / 2  # 1, 3, 5, ..., 99
+            else:  # Descente
+                # CORRECTION : Commence en haut (99) et descend
+                y = self.Longueur/2 - (self.r * p - self.r / 2)  # 99, 97, 95, ..., 1
         return x, y
 
     def _ajouter_point(self, allee, n):
@@ -118,7 +156,9 @@ class Hangar:
 
 
         #offset par allée pour eviter les superpositions
-        offsets = {'H':0.0, 'G':0.1,'F':0.2,'E':0.3,'D':0.4,'C':0.5,'B':0.6,'A':0.7}
+        offsets = {'H':0.0, 'G':0.1,'F':0.2,'E':0.3,'D':0.4,'C':0.5,'B':0.6,'A':0.7,
+                   'HH':0.0, 'GG':0.1, 'FF':0.2, 'EE':0.3, 'DD':0.4, 'CC':0.5, 'BB':0.6, 'AA':0.7, 'AB':0.6
+        }
 
         #Dessiner les allées (rectangles)
         for k, allee in enumerate(self.allees):
@@ -255,7 +295,19 @@ class Hangar:
 #################### Calcul distances 
     def _accessible_verticalement(self, y_start, y_end, allee):
         """Cette methode verifie si le deplacement vertical respecte le sens de circulation"""
-        sens = self.sens[allee]
+        #Trouver l'allée de base
+        if len(allee) == 2:
+            if allee in ['BB','DD','FF','HH','AB']:
+                allee_base = allee[1]
+            else:
+                allee_base = allee[0]
+        else:
+            allee_base = allee
+
+        sens = self.sens.get(allee_base)
+        if sens is None:
+            return True
+        
         return (y_end - y_start)*sens >=0 
     #end _accessible_verticalement
 

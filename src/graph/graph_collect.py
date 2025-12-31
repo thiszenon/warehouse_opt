@@ -555,7 +555,26 @@ class GraphCollect:
                             print(f" {p} -> {q} : {d:.1f} m ")
                         else:
                             print(f" {p} -> {q} : IMPOSSIBLE")
+    def est_faisable(self):
+        """
+        Verifie si un cycle hamiltonien existe dans le graphe 
+        (si on peut visiter tous les points en respectant les contraintes)
+
+        """
+        n= self.n
+        #chaque point doit avoir au moins un successeur et un predecesseur accessible
+        for i in range(n):
+            #verifier les successeurs
+            if all(self.matrice[i][j] == float('inf') for j in range(n) if j!=i):
+                return False
+            #verifier les predecesseurs
+            if all(self.matrice[j][i] == float('inf') for j in range(n) if j!=i):
+                return False
+        return True
     
+
+
+
     def __str__(self):
         return f"GraphCollect({self.n} points: {self.commande})"
 
