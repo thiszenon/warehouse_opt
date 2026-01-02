@@ -16,21 +16,22 @@ from src.data.commandes import get_commandes
 def main():
     # 1. Créer le hangar 
     hangar = Hangar(Longueur=90, largeur_allee=5, r=2)
+    commande2 = [('A', 1), ('B', 3), ('C', 5)]
     
     # 2. Définir une commande
     commande =get_commandes()
-    hangar.placer_commande(commande=commande)
+    hangar.placer_commande(commande=commande2)
     
     # 3. Créer le graphe
     print("Construction du graphe...")
-    graphe = GraphCollect(hangar, commande)
+    graphe = GraphCollect(hangar, commande2)
 
     #version schématique du graphe
     graphe.visualiser_graphe_schematique()
 
     # Visualiser un chemin spécifique
     print("visualisation d'un chemin spécifique...")
-    graphe.visualiser_chemin_sur_hangar(('DD',18), ('F',41))
+    graphe.visualiser_chemin_sur_hangar(('B',3), ('A',1))
 
     # visualiser tous les chemins sur le meme hangar
     print("\nVisualisation de tous les chemins...")

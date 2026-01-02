@@ -10,7 +10,7 @@ import networkx as nx
 from typing import List, Tuple, Dict, Optional, Set
 import json
 
-from geometry import hangar
+from src.geometry import hangar
 
 class GraphCollect:
     """
