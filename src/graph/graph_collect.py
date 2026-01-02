@@ -64,13 +64,13 @@ class GraphCollect:
         for i, (allee,numero) in enumerate(self.sommets):
             coords = self.hangar.points.get((allee,numero),(0,0))
             Graph.add_node(i, 
-                           label = f"{allee}{numero}",
-                           allee = allee,
-                           numero = numero,
-                           x=coords[0],
-                           y=coords[1],
-                           sens= self.hangar.sens[allee]
-                           )
+                        label = f"{allee}{numero}",
+                        allee = allee,
+                        numero = numero,
+                        x=coords[0],
+                        y=coords[1],
+                        sens= self.hangar.sens[allee]
+                        )
         #Ajouter les arcs orientés
         for i in range(self.n):
             for j in range(self.n):

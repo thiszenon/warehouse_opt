@@ -73,7 +73,18 @@ class InsertionSolver(WarehouseTSPSolver):
                 new_cost = (distance_matrix[prev, point] + 
                         distance_matrix[point, next_node])
                 
-                cost_increase = new_cost - current_cost
+                
+                if np.isinf(current_cost) or np.isinf(new_cost):
+                    #Gestion des infinis
+                    if np.isinf(current_cost) and not np.isinf(new_cost):
+                        cost_increase = new_cost #passage de inf à la valieur infinie
+                    elif not np.isinf(current_cost) and np.isinf(new_cost):
+                        cost_increase = float('inf')
+                    else:
+                        #les deux sont inf -> on garde inf
+                        cost_increase = float('inf')
+                else:
+                    cost_increase = new_cost - current_cost
                 
                 if cost_increase < best_cost_increase:
                     best_cost_increase = cost_increase

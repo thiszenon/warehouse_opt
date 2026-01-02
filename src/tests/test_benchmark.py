@@ -1,5 +1,4 @@
 
-# src/tests/test_depot_benchmark.py
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -26,7 +25,7 @@ def main():
         print(f"   Nombre d'instances: {len(scenario['instances'])}")
         
         # Calculer les statistiques globales
-        for solver_name in ['Depot Nearest Neighbor', 'Depot Insertion', 'Depot Two-Opt']:
+        for solver_name in ['Nearest Neighbor', 'Insertion', 'Two-Opt']:
             distances = []
             success_rates = []
             

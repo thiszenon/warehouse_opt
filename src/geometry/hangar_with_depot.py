@@ -53,6 +53,11 @@ class HangarWithDepot(Hangar):
                 return np.sqrt((x_arr - x_depot)**2 + (y_arr - y_depot)**2)
             
             # DÉPÔT → Point dans le hangar
+            if to_point not in self.points:
+                #placer le point s'il n'existe pas
+                allee,n = to_point
+                self._ajouter_point(allee,n)
+
             x_point, y_point = self.points[to_point]
             
             # Chemin: Dépôt → Niveau N1 (y=0) → Point
@@ -84,6 +89,12 @@ class HangarWithDepot(Hangar):
         
         # 3. Départ = Point dans le hangar, Arrivée = DÉPÔT ou ARRIVÉE
         if to_point == self.depot_label or to_point == self.arrival_label:
+            
+            #Vériication si le point de départ existe
+            if from_point not in self.points:
+                allee,n = from_point
+                self._ajouter_point(allee,n)
+
             x_point, y_point = self.points[from_point]
             
             if to_point == self.depot_label:
@@ -99,6 +110,11 @@ class HangarWithDepot(Hangar):
             return dist_to_level + dist_horizontal + dist_to_target
         
         # 4. Départ et Arrivée dans le hangar → utiliser la méthode parent
+        #verifier si les points existent
+        if from_point not in self.points:
+            allee,n = from_point
+            self._ajouter_point(allee,n)
+        
         return super().distance(from_point, to_point)
     
     def calculer_tous_chemins(self, commande):
@@ -170,3 +186,53 @@ class HangarWithDepot(Hangar):
         
         if retourner_fig:
             return fig, ax
+    
+    def tracer_chemin_special(self, p, q, ax=None, couleur='red', style='-', 
+                            alpha=0.8, linewidth=2):
+        """
+        Version adaptée pour tracer des chemins incluant dépôt/arrivée
+        """
+        # Si l'un des points est le dépôt/arrivée
+        if p == self.depot_label or p == self.arrival_label or \
+        q == self.depot_label or q == self.arrival_label:
+            
+            # Obtenir les coordonnées
+            if p == self.depot_label:
+                x_p, y_p = self.depot_position
+            elif p == self.arrival_label:
+                x_p, y_p = self.arrival_position
+            else:
+                x_p, y_p = self.points[p]
+            
+            if q == self.depot_label:
+                x_q, y_q = self.depot_position
+            elif q == self.arrival_label:
+                x_q, y_q = self.arrival_position
+            else:
+                x_q, y_q = self.points[q]
+            
+            # Chemin simplifié via niveau N1
+            chemin = [
+                (x_p, y_p),       # Point de départ
+                (x_p, 0),         # Niveau N1 (vertical)
+                (x_q, 0),         # Niveau N1 (horizontal)
+                (x_q, y_q)        # Point d'arrivée
+            ]
+            
+            distance = (abs(y_p - 0) + abs(x_q - x_p) + abs(0 - y_q))
+            
+            if ax is not None:
+                x_vals = [point[0] for point in chemin]
+                y_vals = [point[1] for point in chemin]
+                ax.plot(x_vals, y_vals, style, color=couleur, 
+                    linewidth=linewidth, alpha=alpha, 
+                    marker='o', markersize=4, markerfacecolor=couleur)
+            
+            return {
+                'distance': distance,
+                'chemin': chemin,
+                'type': 'via_niveau_N1'
+            }
+        
+        # Si les deux points sont dans le hangar, utiliser la méthode parent
+        return super().tracer_chemin(p, q, ax, couleur, style, alpha, linewidth)

@@ -24,7 +24,7 @@ class Hangar:
 
         #sens de circulation (-1: descente, +1: montée)
         self.sens = {'H':-1, 'G':1, 'F':-1, 'E':1,'D':-1,'C':1,'B':-1,'A':1,
-                     'AB':-1,'BB':-1, 'CC':1, 'DD':-1,'EE':1, 'FF':-1,'GG':1,'HH':-1
+                    'AB':-1,'BB':-1, 'CC':1, 'DD':-1,'EE':1, 'FF':-1,'GG':1,'HH':-1
         }
 
         #Niveaux horizontaux

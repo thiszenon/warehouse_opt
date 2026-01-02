@@ -1,0 +1,121 @@
+scenario_id,scenario_name,instance_id,category,n_points,solver,mean_distance,mean_time,gap_to_best,success_rate,std_distance
+same_depot_arrival,Dépôt = Arrivée,small_0,small,3,Depot Nearest Neighbor,244.0,0.0,0.0,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_0,small,3,Depot Nearest Neighbor (ordre fixe),244.0,0.0,0.0,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_0,small,3,Depot Insertion (cheapest),267.0,0.0,9.426229508196721,1.0,32.526911934581186
+same_depot_arrival,Dépôt = Arrivée,small_0,small,3,Depot Insertion (farthest),244.0,0.0,0.0,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_0,small,3,Depot Two-Opt,244.0,0.0,0.0,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_1,small,4,Depot Nearest Neighbor,306.0,0.00033410390218098957,13.754646840148698,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_1,small,4,Depot Nearest Neighbor (ordre fixe),306.0,0.0,13.754646840148698,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_1,small,4,Depot Insertion (cheapest),294.6666666666667,0.0,9.54151177199505,1.0,23.612614331233114
+same_depot_arrival,Dépôt = Arrivée,small_1,small,4,Depot Insertion (farthest),269.0,0.0,0.0,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_1,small,4,Depot Two-Opt,306.0,0.0,13.754646840148698,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_2,small,5,Depot Nearest Neighbor,345.0,0.0,8.263598326359826,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_2,small,5,Depot Nearest Neighbor (ordre fixe),345.0,0.0,8.263598326359826,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_2,small,5,Depot Insertion (cheapest),318.6666666666667,0.0,0.0,1.0,15.965240019770729
+same_depot_arrival,Dépôt = Arrivée,small_2,small,5,Depot Insertion (farthest),353.0,0.00033473968505859375,10.774058577405851,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,small_2,small,5,Depot Two-Opt,380.0,0.0,19.246861924686183,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,medium_0,medium,6,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_0,medium,6,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_0,medium,6,Depot Insertion (cheapest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_0,medium,6,Depot Insertion (farthest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_0,medium,6,Depot Two-Opt,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_1,medium,8,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_1,medium,8,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_1,medium,8,Depot Insertion (cheapest),580.6666666666666,0.0003364880879720052,2.230046948356801,1.0,27.207025236549146
+same_depot_arrival,Dépôt = Arrivée,medium_1,medium,8,Depot Insertion (farthest),568.0,0.0,0.0,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,medium_1,medium,8,Depot Two-Opt,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_2,medium,10,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_2,medium,10,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_2,medium,10,Depot Insertion (cheapest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_2,medium,10,Depot Insertion (farthest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,medium_2,medium,10,Depot Two-Opt,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_0,large,12,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_0,large,12,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_0,large,12,Depot Insertion (cheapest),550.0,0.0,0.0,0.3333333333333333,0.0
+same_depot_arrival,Dépôt = Arrivée,large_0,large,12,Depot Insertion (farthest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_0,large,12,Depot Two-Opt,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_1,large,15,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_1,large,15,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_1,large,15,Depot Insertion (cheapest),578.0,0.0006660620371500651,0.0,1.0,51.43928459844674
+same_depot_arrival,Dépôt = Arrivée,large_1,large,15,Depot Insertion (farthest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_1,large,15,Depot Two-Opt,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_2,large,18,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_2,large,18,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_2,large,18,Depot Insertion (cheapest),741.3333333333334,0.000997304916381836,0.0,1.0,21.684607956387456
+same_depot_arrival,Dépôt = Arrivée,large_2,large,18,Depot Insertion (farthest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,large_2,large,18,Depot Two-Opt,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_0,difficult,4,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_0,difficult,4,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_0,difficult,4,Depot Insertion (cheapest),407.0,0.0,13.687150837988826,1.0,37.797707161502096
+same_depot_arrival,Dépôt = Arrivée,difficult_0,difficult,4,Depot Insertion (farthest),358.0,0.0,0.0,1.0,0.0
+same_depot_arrival,Dépôt = Arrivée,difficult_0,difficult,4,Depot Two-Opt,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_1,difficult,6,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_1,difficult,6,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_1,difficult,6,Depot Insertion (cheapest),803.0,0.0,0.0,0.3333333333333333,0.0
+same_depot_arrival,Dépôt = Arrivée,difficult_1,difficult,6,Depot Insertion (farthest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_1,difficult,6,Depot Two-Opt,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_2,difficult,8,Depot Nearest Neighbor,inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_2,difficult,8,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_2,difficult,8,Depot Insertion (cheapest),629.0,0.0,0.0,0.6666666666666666,0.0
+same_depot_arrival,Dépôt = Arrivée,difficult_2,difficult,8,Depot Insertion (farthest),inf,0,,0,0
+same_depot_arrival,Dépôt = Arrivée,difficult_2,difficult,8,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,small_0,small,3,Depot Nearest Neighbor,284.0,0.0,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_0,small,3,Depot Nearest Neighbor (ordre fixe),284.0,0.0,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_0,small,3,Depot Insertion (cheapest),284.0,0.0,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_0,small,3,Depot Insertion (farthest),284.0,0.0,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_0,small,3,Depot Two-Opt,284.0,0.00033092498779296875,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_1,small,4,Depot Nearest Neighbor,346.0,0.0,11.974110032362459,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_1,small,4,Depot Nearest Neighbor (ordre fixe),346.0,0.0,11.974110032362459,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_1,small,4,Depot Insertion (cheapest),347.6666666666667,0.0,12.513484358144558,1.0,9.428090415820632
+different_depot_arrival,Dépôt ≠ Arrivée,small_1,small,4,Depot Insertion (farthest),309.0,0.00033283233642578125,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_1,small,4,Depot Two-Opt,346.0,0.0,11.974110032362459,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_2,small,5,Depot Nearest Neighbor,385.0,0.0,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_2,small,5,Depot Nearest Neighbor (ordre fixe),385.0,0.0,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_2,small,5,Depot Insertion (cheapest),405.0,0.0,5.194805194805195,0.3333333333333333,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_2,small,5,Depot Insertion (farthest),393.0,0.0003348986307779948,2.0779220779220777,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,small_2,small,5,Depot Two-Opt,389.0,0.0,1.0389610389610389,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_0,medium,6,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_0,medium,6,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_0,medium,6,Depot Insertion (cheapest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_0,medium,6,Depot Insertion (farthest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_0,medium,6,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_1,medium,8,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_1,medium,8,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_1,medium,8,Depot Insertion (cheapest),617.5,0.0,3.6073825503355708,0.6666666666666666,9.5
+different_depot_arrival,Dépôt ≠ Arrivée,medium_1,medium,8,Depot Insertion (farthest),596.0,0.0003452301025390625,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_1,medium,8,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_2,medium,10,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_2,medium,10,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_2,medium,10,Depot Insertion (cheapest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_2,medium,10,Depot Insertion (farthest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,medium_2,medium,10,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_0,large,12,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_0,large,12,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_0,large,12,Depot Insertion (cheapest),644.0,0.0009975433349609375,0.0,0.3333333333333333,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,large_0,large,12,Depot Insertion (farthest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_0,large,12,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_1,large,15,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_1,large,15,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_1,large,15,Depot Insertion (cheapest),580.0,0.0,0.0,0.3333333333333333,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,large_1,large,15,Depot Insertion (farthest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_1,large,15,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_2,large,18,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_2,large,18,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_2,large,18,Depot Insertion (cheapest),836.0,0.0006660620371500651,0.0,1.0,43.96210489349511
+different_depot_arrival,Dépôt ≠ Arrivée,large_2,large,18,Depot Insertion (farthest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,large_2,large,18,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_0,difficult,4,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_0,difficult,4,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_0,difficult,4,Depot Insertion (cheapest),398.0,0.0,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_0,difficult,4,Depot Insertion (farthest),398.0,0.0,0.0,1.0,0.0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_0,difficult,4,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_1,difficult,6,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_1,difficult,6,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_1,difficult,6,Depot Insertion (cheapest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_1,difficult,6,Depot Insertion (farthest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_1,difficult,6,Depot Two-Opt,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_2,difficult,8,Depot Nearest Neighbor,inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_2,difficult,8,Depot Nearest Neighbor (ordre fixe),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_2,difficult,8,Depot Insertion (cheapest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_2,difficult,8,Depot Insertion (farthest),inf,0,,0,0
+different_depot_arrival,Dépôt ≠ Arrivée,difficult_2,difficult,8,Depot Two-Opt,inf,0,,0,0

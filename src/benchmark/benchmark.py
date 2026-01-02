@@ -66,7 +66,7 @@ class TSPBenchmarker:
     def run_benchmark(self, solvers=None, n_runs=3):
         """Exécute le benchmark complet"""
         print("=" * 70)
-        print("🚀 BENCHMARK COMPLET - COLLECTE AVEC DÉPÔT")
+        print("BENCHMARK COMPLET - COLLECTE AVEC DÉPÔT")
         print("=" * 70)
         
         # Solveurs par défaut
@@ -85,7 +85,7 @@ class TSPBenchmarker:
         all_results = []
         
         for scenario in scenarios:
-            print(f"\n📊 SCÉNARIO: {scenario['name']}")
+            print(f"\n SCÉNARIO: {scenario['name']}")
             print(f"   Dépôt: {scenario['depot_position']}")
             print(f"   Arrivée: {scenario.get('arrival_position', 'identique')}")
             
@@ -231,7 +231,7 @@ class TSPBenchmarker:
         for scenario in results:
             serializable_scenario = {
                 'scenario_id': scenario['scenario_id'],
-                'scenario_name': scenario['scenario_name'],
+                'scenario_name': scenario['scenario_name'].replace('≠','!='),
                 'depot_position': scenario['depot_position'],
                 'arrival_position': scenario.get('arrival_position'),
                 'instances': []
@@ -257,8 +257,8 @@ class TSPBenchmarker:
             
             serializable_results.append(serializable_scenario)
         
-        with open(filename, 'w') as f:
-            json.dump(serializable_results, f, indent=2, ensure_ascii=False,default=str, escape_forward_slashes=False)
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(serializable_results, f, indent=2, ensure_ascii=False,default=str)
         
         print(f"\n💾 Résultats sauvegardés: {filename}")
     
