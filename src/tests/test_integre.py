@@ -1,6 +1,5 @@
-# test_integre.py
 """
-Test d'intégration de GraphCollect le  votre Hangar
+Test d'intégration du GraphCollect
 """
 import sys
 import os

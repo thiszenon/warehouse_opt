@@ -18,7 +18,8 @@ from graph.graph_collect_depot import GraphCollectWithDepot
 from src.algorithms import (
     NearestNeighborSolver,
     InsertionSolver,
-    TwoOptSolver
+    TwoOptSolver,
+    StructuralInsertionSolver
 )
 from src.data.commandes import get_commandes
 
@@ -64,10 +65,11 @@ def test_avec_depot_fixe():
     print("-" * 50)
     
     solvers = [
-        NearestNeighborSolver(start_at_nearest=True),
+        #NearestNeighborSolver(start_at_nearest=True),
         InsertionSolver(seed=42, insertion_strategy='cheapest'),
-        InsertionSolver(seed=42, insertion_strategy='farthest'),
-        TwoOptSolver(),
+        #InsertionSolver(seed=42, insertion_strategy='farthest'),
+        #TwoOptSolver(),
+        #StructuralInsertionSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,use_structure=True)
     ]
     
     best_solution = None
@@ -150,10 +152,16 @@ def test_avec_depot_fixe():
     
     return best_solution
 
-def test_avec_depot_arrivee_differents():
-    """Test avec dépôt et arrivée différents"""
+def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=True):
+    """
+    Test avec dépôt et arrivée différents - version simplifiée pour tester un algorithme
+    
+    Args:
+        algorithm_type: 'nearest', 'cheapest', 'farthest', 'two_opt'
+        display_plot: True pour afficher les visualisations
+    """
     print("\n" + "=" * 70)
-    print("🚀 TEST AVEC DÉPÔT ≠ ARRIVÉE")
+    print(f"🚀 TEST AVEC DÉPÔT ≠ ARRIVÉE - Algorithme: {algorithm_type}")
     print("=" * 70)
     
     # 1. Créer le hangar avec dépôt et arrivée différents
@@ -161,13 +169,13 @@ def test_avec_depot_arrivee_differents():
         Longueur=90, 
         largeur_allee=5, 
         r=2,
-        depot_position=(35, -10),   # Devant à droite
-        arrival_position=(15, -10)  # Devant à gauche
+        depot_position=(25, -5),   # Devant à droite
+        arrival_position=(15, -5)  # Devant à gauche
     )
     
     # 2. Définir une commande réelle
     commande = get_commandes()
-    print(f"\n Commande à collecter ({len(commande)} points):")
+    print(f"\n📦 Commande à collecter ({len(commande)} points):")
     for i, (allee, n) in enumerate(commande):
         print(f"   {i+1}. {allee}{n}")
     
@@ -175,54 +183,210 @@ def test_avec_depot_arrivee_differents():
     hangar.placer_commande(commande)
     
     # 3. Créer le graphe
-    print("\n Construction du graphe...")
+    print("\n🔧 Construction du graphe...")
     graphe = GraphCollectWithDepot(hangar, commande)
-
-    #4. Vérifier que le point depot != arrivé
+    
+    # 4. Vérifier que le point dépôt ≠ arrivée
     if hangar.depot_position == hangar.arrival_position:
-        print("depot et arrivée sont identiques!")
-    print(f"Dépot position: {hangar.depot_position}")
-    print(f"Dépot position: {hangar.arrival_position}")
+        print("⚠️ Attention: dépôt et arrivée sont identiques!")
+    else:
+        print("✅ Dépôt et arrivée sont différents")
+    
+    print(f"📍 Dépôt position: {hangar.depot_position}")
+    print(f"📍 Arrivée position: {hangar.arrival_position}")
+    
+    # 5. Afficher les informations du graphe
+    graphe.afficher_infos()
+    
+    # 6. Initialiser l'algorithme choisi
+    print(f"\n🎯 CONFIGURATION DE L'ALGORITHME: {algorithm_type.upper()}")
+    
+    if algorithm_type == 'nearest':
+        solver = NearestNeighborSolver(start_at_nearest=True)
+        print("   - Plus proche voisin")
+        print("   - Commence au point le plus proche du dépôt")
+        
+    elif algorithm_type == 'cheapest':
+        solver = InsertionSolver(seed=42, insertion_strategy='cheapest')
+        print("   - Insertion la moins chère")
+        print("   - Insère les points là où ça coûte le moins")
+        
+    elif algorithm_type == 'farthest':
+        solver = InsertionSolver(seed=42, insertion_strategy='farthest')
+        print("   - Insertion la plus éloignée")
+        print("   - Commence par les points les plus éloignés")
+        
+    elif algorithm_type == 'two_opt':
+        solver = TwoOptSolver()
+        print("   - 2-opt amélioration")
+        print("   - Améliore une solution existante")
+    elif algorithm_type == 'structural_insertion':
+        solver = StructuralInsertionSolver(
+            hangar=hangar,
+            commande=commande,
+            points_complets=graphe.points_complets,
+            use_structure=True
+        )
+        print(" - structural insertion")
 
+    else:
+        raise ValueError(f"Algorithme inconnu: {algorithm_type}")
     
-    # 4. Tester seulement l'algorithme le plus performant du premier test
-    print("\n🎯 TEST DU MEILLEUR ALGORITHME (Insertion farthest)")
-    solvers = [
-        NearestNeighborSolver(start_at_nearest=True),
-        InsertionSolver(seed=42, insertion_strategy='cheapest'),
-        InsertionSolver(seed=42, insertion_strategy='farthest'),
-        TwoOptSolver(),
-    ]
-    for solver in solvers:
+    # 7. Résoudre avec l'algorithme choisi
+    print(f"\n⚙️  RÉSOLUTION EN COURS...")
     
-        try:
-            #resoudre 
-            result = solver.solve(
-                graphe.matrice,
-                depot_idx=graphe.depot_idx,
-                arrival_idx=graphe.arrival_idx
-            )
+    try:
+        result = solver.solve(
+            graphe.matrice,
+            depot_idx=graphe.depot_idx,
+            arrival_idx=graphe.arrival_idx
+        )
+        
+        if result:
+            print(f"✅ SOLUTION TROUVÉE!")
+            print(f"📏 Distance totale: {result['distance']:.1f}m")
+            print(f"⏱️  Temps de calcul: {result['time']:.4f}s")
             
-            if result:
-                print(f"   ✅ Solution trouvée!")
-                print(f"   📏 Distance: {result['distance']:.1f}m")
-                print(f"   ⏱️  Temps: {result['time']:.4f}s")
-                
-                # Afficher le parcours
-                print(f"   🛣️  Parcours: DÉPÔT → ", end="")
-                for idx in result['tour'][1:-1]:  # Exclure début et fin
+            # Afficher le parcours détaillé
+            print(f"\n🛣️  PARCOURS DÉTAILLÉ:")
+            for i, idx in enumerate(result['tour']):
+                if idx == graphe.depot_idx:
+                    nom = "DÉPÔT"
+                elif idx == graphe.arrival_idx:
+                    nom = "ARRIVÉE"
+                else:
                     point_idx = idx - 1
                     if 0 <= point_idx < len(commande):
                         allee, n = commande[point_idx]
-                        print(f"{allee}{n} → ", end="")
-                print("ARRIVÉE")
-            else:
-                print(f"   ❌ Aucune solution trouvée")
+                        nom = f"{allee}{n}"
+                    else:
+                        nom = f"Point {idx}"
                 
-        except Exception as e:
-            print(f"   ⚠️  Erreur: {e}")
+                print(f"   {i+1}. {nom}")
+            
+            # Calculer les distances segment par segment
+            print(f"\n📊 DÉTAIL DES SEGMENTS:")
+            total_distance = 0
+            for i in range(len(result['tour']) - 1):
+                idx_from = result['tour'][i]
+                idx_to = result['tour'][i+1]
+                distance = graphe.matrice[idx_from, idx_to]
+                total_distance += distance
+                
+                # Noms des points
+                if idx_from == graphe.depot_idx:
+                    nom_from = "DÉPÔT"
+                elif idx_from == graphe.arrival_idx:
+                    nom_from = "ARRIVÉE"
+                else:
+                    point_idx = idx_from - 1
+                    if 0 <= point_idx < len(commande):
+                        allee, n = commande[point_idx]
+                        nom_from = f"{allee}{n}"
+                    else:
+                        nom_from = f"Point {idx_from}"
+                
+                if idx_to == graphe.depot_idx:
+                    nom_to = "DÉPÔT"
+                elif idx_to == graphe.arrival_idx:
+                    nom_to = "ARRIVÉE"
+                else:
+                    point_idx = idx_to - 1
+                    if 0 <= point_idx < len(commande):
+                        allee, n = commande[point_idx]
+                        nom_to = f"{allee}{n}"
+                    else:
+                        nom_to = f"Point {idx_to}"
+                
+                print(f"   Segment {i+1}: {nom_from} → {nom_to} ({distance:.1f}m)")
+            
+            # Vérifier la cohérence
+            if abs(total_distance - result['distance']) > 0.1:
+                print(f"⚠️  Attention: différence entre somme des segments ({total_distance:.1f}m) et distance totale ({result['distance']:.1f}m)")
+            
+            # 8. Visualiser le résultat si demandé
+            if display_plot:
+                print(f"\n🎨 GÉNÉRATION DES VISUALISATIONS...")
+                visualiser_chemins_parcours(hangar, commande, result, graphe)
+            
+            return {
+                'hangar': hangar,
+                'commande': commande,
+                'graphe': graphe,
+                'solution': result,
+                'solver': solver
+            }
+            
+        else:
+            print(f"❌ AUCUNE SOLUTION TROUVÉE")
+            return None
+            
+    except Exception as e:
+        print(f"❌ ERREUR: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+# Fonction pour tester tous les algorithmes successivement
+def comparer_tous_algorithmes():
+    """Teste tous les algorithmes successivement et compare les résultats"""
+    print("\n" + "=" * 70)
+    print("📊 COMPARAISON DE TOUS LES ALGORITHMES")
+    print("=" * 70)
     
-    return result
+    algorithms = ['nearest', 'cheapest', 'farthest', 'two_opt']
+    results = []
+    
+    for algo in algorithms:
+        print(f"\n▶️  TEST DE L'ALGORITHME: {algo.upper()}")
+        result = test_avec_depot_arrivee_differents(
+            algorithm_type=algo,
+            display_plot=False  # Pas de visualisation pour la comparaison
+        )
+        
+        if result and 'solution' in result:
+            results.append({
+                'algorithm': algo,
+                'distance': result['solution']['distance'],
+                'time': result['solution']['time'],
+                'solution': result
+            })
+    
+    # Afficher le tableau comparatif
+    if results:
+        print("\n" + "=" * 70)
+        print("📈 RÉSULTATS COMPARATIFS")
+        print("=" * 70)
+        
+        # Trouver la meilleure distance
+        best_distance = min(r['distance'] for r in results)
+        
+        print(f"\n{'Algorithme':<15} {'Distance (m)':<15} {'Temps (s)':<12} {'Performance':<10}")
+        print("-" * 52)
+        
+        for r in results:
+            performance = f"{((best_distance / r['distance']) * 100):.1f}%" if r['distance'] > 0 else "N/A"
+            diff_percent = f"+{((r['distance'] - best_distance) / best_distance * 100):.1f}%" if r['distance'] > best_distance else "MEILLEUR"
+            
+            print(f"{r['algorithm']:<15} {r['distance']:<15.1f} {r['time']:<12.4f} {diff_percent:<10}")
+        
+        # Afficher le meilleur résultat
+        print(f"\n🏆 MEILLEUR ALGORITHME: {min(results, key=lambda x: x['distance'])['algorithm']}")
+        
+        # Demander si on veut visualiser le meilleur
+        best_algo = min(results, key=lambda x: x['distance'])['algorithm']
+        response = input(f"\nVoulez-vous visualiser le résultat du meilleur algorithme ({best_algo}) ? (o/n): ")
+        if response.lower() == 'o':
+            test_avec_depot_arrivee_differents(
+                algorithm_type=best_algo,
+                display_plot=True
+            )
+    
+    return results
+
+
+
 
 def visualiser_parcours_optimal(hangar, commande, solution, graphe):
     """Visualise le parcours optimal sur le hangar"""
@@ -787,7 +951,7 @@ def main():
     solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents()
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='cheapest',display_plot=True)
     
     # Analyse comparative
     print("\n" + "=" * 70)

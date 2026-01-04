@@ -31,90 +31,88 @@ class HangarWithDepot(Hangar):
     
     def distance_special(self, from_point, to_point):
         """
-        Distance entre deux points, avec gestion spéciale des points hors hangar.
-        
-        Logique simplifiée pour les benchmarks :
-        - Pour aller d'un point hors hangar à un point dans le hangar :
-          position → niveau N1 → point
-        - Pour aller d'un point dans le hangar à un point hors hangar :
-          point → niveau N1 → position
+        Version simplifiée mais qui respecte mieux les contraintes.
         """
-        # 1. Départ = DÉPÔT
-        if from_point == self.depot_label:
-            x_depot, y_depot = self.depot_position
-            
-            # Si arrivée = DÉPÔT (même point)
-            if to_point == self.depot_label:
-                return 0.0
-            
-            # Si arrivée = ARRIVÉE différente
-            if to_point == self.arrival_label:
-                x_arr, y_arr = self.arrival_position
-                return np.sqrt((x_arr - x_depot)**2 + (y_arr - y_depot)**2)
-            
-            # DÉPÔT → Point dans le hangar
-            if to_point not in self.points:
-                #placer le point s'il n'existe pas
-                allee,n = to_point
-                self._ajouter_point(allee,n)
-
-            x_point, y_point = self.points[to_point]
-            
-            # Chemin: Dépôt → Niveau N1 (y=0) → Point
-            # Distance verticale pour atteindre le niveau
-            dist_to_level = abs(0 - y_depot)  # y_depot est négatif (-10)
-            # Distance horizontale au niveau
-            dist_horizontal = abs(x_point - x_depot)
-            # Distance verticale dans le hangar
-            dist_in_hangar = abs(y_point - 0)
-            
-            return dist_to_level + dist_horizontal + dist_in_hangar
         
-        # 2. Départ = ARRIVÉE (si différente de DÉPÔT)
-        if from_point == self.arrival_label:
-            x_arr, y_arr = self.arrival_position
+        # CAS 1 : DÉPÔT/ARRIVÉE → DÉPÔT/ARRIVÉE
+        if (from_point in [self.depot_label, self.arrival_label] and 
+            to_point in [self.depot_label, self.arrival_label]):
             
-            # ARRIVÉE → DÉPÔT
-            if to_point == self.depot_label:
-                x_depot, y_depot = self.depot_position
-                return np.sqrt((x_depot - x_arr)**2 + (y_depot - y_arr)**2)
+            x1, y1 = self.depot_position if from_point == self.depot_label else self.arrival_position
+            x2, y2 = self.depot_position if to_point == self.depot_label else self.arrival_position
             
-            # ARRIVÉE → Point dans le hangar (peu probable mais géré)
-            x_point, y_point = self.points[to_point]
-            dist_to_level = abs(0 - y_arr)
-            dist_horizontal = abs(x_point - x_arr)
-            dist_in_hangar = abs(y_point - 0)
-            
-            return dist_to_level + dist_horizontal + dist_in_hangar
+            return np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
         
-        # 3. Départ = Point dans le hangar, Arrivée = DÉPÔT ou ARRIVÉE
-        if to_point == self.depot_label or to_point == self.arrival_label:
+        # CAS 2 : Un des points est hors hangar
+        if from_point in [self.depot_label, self.arrival_label] or to_point in [self.depot_label, self.arrival_label]:
             
-            #Vériication si le point de départ existe
-            if from_point not in self.points:
-                allee,n = from_point
-                self._ajouter_point(allee,n)
-
-            x_point, y_point = self.points[from_point]
-            
-            if to_point == self.depot_label:
-                x_target, y_target = self.depot_position
+            # Déterminer le point hors hangar et le point dans le hangar
+            if from_point in [self.depot_label, self.arrival_label]:
+                point_hors = from_point
+                point_dans = to_point
+                sens = "vers_hangar"
             else:
-                x_target, y_target = self.arrival_position
+                point_hors = to_point
+                point_dans = from_point
+                sens = "depuis_hangar"
             
-            # Chemin: Point → Niveau N1 (y=0) → Dépôt/Arrivée
-            dist_to_level = abs(0 - y_point)
-            dist_horizontal = abs(x_target - x_point)
-            dist_to_target = abs(y_target - 0)
+            # Coordonnées du point hors hangar
+            if point_hors == self.depot_label:
+                x_hors, y_hors = self.depot_position
+            else:
+                x_hors, y_hors = self.arrival_position
             
-            return dist_to_level + dist_horizontal + dist_to_target
+            # Coordonnées du point dans le hangar
+            if point_dans not in self.points:
+                allee, n = point_dans
+                self._ajouter_point(allee, n)
+            x_dans, y_dans = self.points[point_dans]
+            
+            # Trouver l'allée du point dans le hangar
+            allee_dans, _ = point_dans
+            
+            # Créer un point d'entrée dans cette allée au niveau 0
+            point_entree = (allee_dans, 0)
+            if point_entree not in self.points:
+                self._ajouter_point(allee_dans, 0)
+            
+            # Distance hors hangar → entrée (ligne droite)
+            dist_externe = np.sqrt(
+                (self.points[point_entree][0] - x_hors)**2 + 
+                (self.points[point_entree][1] - y_hors)**2
+            )
+            
+            # Distance dans le hangar : entrée → point
+            dist_interne = super().distance(point_entree, point_dans)
+            
+            # Si pas de chemin direct, chercher un chemin via un autre niveau
+            if dist_interne == float('inf'):
+                # Essayer différents niveaux
+                for y_n in self.niveaux.values():
+                    point_niveau = (allee_dans, y_n)
+                    if point_niveau not in self.points:
+                        continue
+                    
+                    # Entrée → niveau
+                    d1 = super().distance(point_entree, point_niveau)
+                    if d1 == float('inf'):
+                        continue
+                    
+                    # Niveau → point
+                    d2 = super().distance(point_niveau, point_dans)
+                    if d2 == float('inf'):
+                        continue
+                    
+                    dist_interne = min(dist_interne, d1 + d2)
+            
+            # Si toujours inf, utiliser estimation
+            if dist_interne == float('inf'):
+                # Estimation conservatrice
+                dist_interne = abs(y_dans - 0) * 2  # Aller-retour dans l'allée
+            
+            return dist_externe + dist_interne
         
-        # 4. Départ et Arrivée dans le hangar → utiliser la méthode parent
-        #verifier si les points existent
-        if from_point not in self.points:
-            allee,n = from_point
-            self._ajouter_point(allee,n)
-        
+        # CAS 3 : Les deux points sont dans le hangar
         return super().distance(from_point, to_point)
     
     def calculer_tous_chemins(self, commande):
