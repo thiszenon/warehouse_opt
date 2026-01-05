@@ -1,3 +1,4 @@
+#NOTE: Cet Algorithme ne respecte pas la structure geometrique et les contraintes du Hangar
 import time
 import itertools
 from .base_solver import BaseSolver

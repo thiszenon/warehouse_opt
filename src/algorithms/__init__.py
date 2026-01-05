@@ -5,12 +5,17 @@ from .nearest_neighbor import NearestNeighborSolver
 from .insertion import InsertionSolver
 from .two_opt import TwoOptSolver
 from .structural_insertion import StructuralInsertionSolver
+from .s_shape import SShapeSolver
+from .u_shape import UShapeSolver
 
 __all__ = [
     'WarehouseTSPSolver',
     'NearestNeighborSolver',
     'InsertionSolver',
     'TwoOptSolver',
-    StructuralInsertionSolver
+    'StructuralInsertionSolver',
+    'SShapeSolver',
+    'UShapeSolver'
+
 ]
 

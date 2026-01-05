@@ -19,7 +19,9 @@ from src.algorithms import (
     NearestNeighborSolver,
     InsertionSolver,
     TwoOptSolver,
-    StructuralInsertionSolver
+    StructuralInsertionSolver,
+    SShapeSolver,
+    UShapeSolver
 )
 from src.data.commandes import get_commandes
 
@@ -66,10 +68,13 @@ def test_avec_depot_fixe():
     
     solvers = [
         #NearestNeighborSolver(start_at_nearest=True),
-        InsertionSolver(seed=42, insertion_strategy='cheapest'),
+        #InsertionSolver(seed=42, insertion_strategy='cheapest'),
         #InsertionSolver(seed=42, insertion_strategy='farthest'),
         #TwoOptSolver(),
-        #StructuralInsertionSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,use_structure=True)
+        #StructuralInsertionSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,use_structure=True),
+        SShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,start_from='left'),
+        #UShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,strategy='alternating')
+
     ]
     
     best_solution = None
@@ -228,6 +233,21 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
             use_structure=True
         )
         print(" - structural insertion")
+    elif algorithm_type == 's_shape':
+        solver = SShapeSolver(
+            hangar=hangar,
+            commande=commande,
+            points_complets=graphe.points_complets,
+            start_from='left',
+        )
+        print("- s_shape heuristique")
+    elif algorithm_type =='u_shape':
+        solver = UShapeSolver(
+            hangar=hangar,
+            commande=commande,
+            points_complets= graphe.points_complets,
+            strategy='one_way'
+        )
 
     else:
         raise ValueError(f"Algorithme inconnu: {algorithm_type}")
@@ -951,7 +971,7 @@ def main():
     solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='cheapest',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='s_shape',display_plot=True)
     
     # Analyse comparative
     print("\n" + "=" * 70)
