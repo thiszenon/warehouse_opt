@@ -21,7 +21,9 @@ from src.algorithms import (
     TwoOptSolver,
     StructuralInsertionSolver,
     SShapeSolver,
-    UShapeSolver
+    UShapeSolver,
+    RobustSShapeSolver,
+    RobustUShapeSolver
 )
 from src.data.commandes import get_commandes
 
@@ -68,12 +70,14 @@ def test_avec_depot_fixe():
     
     solvers = [
         #NearestNeighborSolver(start_at_nearest=True),
-        #InsertionSolver(seed=42, insertion_strategy='cheapest'),
+        InsertionSolver(seed=42, insertion_strategy='cheapest'),
         #InsertionSolver(seed=42, insertion_strategy='farthest'),
         #TwoOptSolver(),
         #StructuralInsertionSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,use_structure=True),
-        SShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,start_from='left'),
-        #UShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,strategy='alternating')
+        #SShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,start_from='left',transition_level='optimal'),
+        #UShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,strategy='alternating',return_level='optimal'),
+        #RobustUShapeSolver(hangar=hangar,commande=commande, points_complets=graphe.points_complets,fallback_to_simple=False),
+        #RobustSShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,fallback_to_simple=False)
 
     ]
     
@@ -239,6 +243,7 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
             commande=commande,
             points_complets=graphe.points_complets,
             start_from='left',
+            transition_level='optimal'
         )
         print("- s_shape heuristique")
     elif algorithm_type =='u_shape':
@@ -246,7 +251,22 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
             hangar=hangar,
             commande=commande,
             points_complets= graphe.points_complets,
-            strategy='one_way'
+            strategy='alternating'
+        )
+        print("- u_shape heuristique")
+    elif algorithm_type =='rob_s_shape':
+        solver =RobustSShapeSolver(
+            hangar=hangar,
+            commande=commande,
+            points_complets=graphe.points_complets,
+            fallback_to_simple=False
+        )
+    elif algorithm_type == 'rob_u_shape':
+        solver = RobustUShapeSolver(
+            hangar=hangar,
+            commande=commande,
+            points_complets=graphe.points_complets,
+            fallback_to_simple=False
         )
 
     else:
@@ -971,7 +991,7 @@ def main():
     solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='s_shape',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='cheapest',display_plot=True)
     
     # Analyse comparative
     print("\n" + "=" * 70)

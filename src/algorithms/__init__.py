@@ -7,6 +7,8 @@ from .two_opt import TwoOptSolver
 from .structural_insertion import StructuralInsertionSolver
 from .s_shape import SShapeSolver
 from .u_shape import UShapeSolver
+from .rob_s_shape import RobustSShapeSolver
+from .rob_u_shape import RobustUShapeSolver
 
 __all__ = [
     'WarehouseTSPSolver',
@@ -15,7 +17,9 @@ __all__ = [
     'TwoOptSolver',
     'StructuralInsertionSolver',
     'SShapeSolver',
-    'UShapeSolver'
+    'UShapeSolver',
+    'RobustUShapeSolver',
+    'RobustSShapeSolver'
 
 ]
 
