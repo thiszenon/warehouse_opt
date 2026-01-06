@@ -24,7 +24,8 @@ from src.algorithms import (
     UShapeSolver,
     RobustSShapeSolver,
     RobustUShapeSolver,
-    AlleyFirstSolver
+    AlleyFirstSolver,
+    RobustAlleySolver
 )
 from src.data.commandes import get_commandes
 
@@ -70,7 +71,7 @@ def test_avec_depot_fixe():
     print("-" * 50)
     
     solvers = [
-        NearestNeighborSolver(start_at_nearest=True),
+        #NearestNeighborSolver(start_at_nearest=True),
         #InsertionSolver(seed=42, insertion_strategy='cheapest'),
         #InsertionSolver(seed=42, insertion_strategy='farthest'),
         #TwoOptSolver(),
@@ -80,6 +81,7 @@ def test_avec_depot_fixe():
         #RobustUShapeSolver(hangar=hangar,commande=commande, points_complets=graphe.points_complets,fallback_to_simple=False),
         #RobustSShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,fallback_to_simple=False),
         #AlleyFirstSolver(hangar=hangar,points_complets=graphe.points_complets)
+        RobustAlleySolver(hangar=hangar,points_complets=graphe.points_complets,consolidation_enabled=True)
 
     ]
     
@@ -277,6 +279,15 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
             hangar=hangar,
             points_complets=graphe.points_complets
         )
+        print("- first Solver")
+    elif algorithm_type == 'robust_solver':
+        solver = RobustAlleySolver(
+            hangar=hangar,
+            points_complets=graphe.points_complets,
+            consolidation_enabled=True
+        )
+        print("- robust solver")
+
         
 
     else:
@@ -1001,7 +1012,7 @@ def main():
     solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='nearest',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='robust_solver',display_plot=True)
     
     # Analyse comparative
     print("\n" + "=" * 70)
