@@ -70,7 +70,7 @@ def test_avec_depot_fixe():
     print("-" * 50)
     
     solvers = [
-        #NearestNeighborSolver(start_at_nearest=True),
+        NearestNeighborSolver(start_at_nearest=True),
         #InsertionSolver(seed=42, insertion_strategy='cheapest'),
         #InsertionSolver(seed=42, insertion_strategy='farthest'),
         #TwoOptSolver(),
@@ -78,7 +78,7 @@ def test_avec_depot_fixe():
         #SShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,start_from='left',transition_level='optimal'),
         #UShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,strategy='alternating',return_level='optimal'),
         #RobustUShapeSolver(hangar=hangar,commande=commande, points_complets=graphe.points_complets,fallback_to_simple=False),
-        RobustSShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,fallback_to_simple=False),
+        #RobustSShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,fallback_to_simple=False),
         #AlleyFirstSolver(hangar=hangar,points_complets=graphe.points_complets)
 
     ]
@@ -1001,7 +1001,7 @@ def main():
     solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='rob_s_shape',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='nearest',display_plot=True)
     
     # Analyse comparative
     print("\n" + "=" * 70)
