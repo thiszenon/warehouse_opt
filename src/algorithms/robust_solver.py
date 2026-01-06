@@ -118,19 +118,26 @@ class RobustAlleySolver(WarehouseTSPSolver):
         return groups
     
     def _adaptive_greedy_construction(self, alley_points: Dict[str, Set[int]],
-                                    remaining_points: Set[int],
-                                    distance_matrix: np.ndarray,
-                                    depot_idx: int, arrival_idx: int) -> List[int]:
+                                remaining_points: Set[int],
+                                distance_matrix: np.ndarray,
+                                depot_idx: int, arrival_idx: int) -> List[int]:
         """
         Construction gloutonne adaptative avec gestion des ∞
         """
         tour = [depot_idx]
         current_point = depot_idx
-        current_alley = None
+        current_alley = self._get_alley_of_point(depot_idx)
         visited_alleys = []  # Historique des allées visitées
         backtrack_count = 0
+        max_iterations = len(remaining_points) * 3  # Sécurité anti-boucle infinie
         
-        while remaining_points:
+        iteration = 0
+        while remaining_points and iteration < max_iterations:
+            iteration += 1
+            
+            # DEBUG: Afficher l'état actuel
+            # print(f"Iteration {iteration}: point {current_point}, allée {current_alley}, restants {len(remaining_points)}")
+            
             # Option A : Continuer dans l'allée courante si possible
             if current_alley and current_alley in alley_points:
                 same_alley_points = alley_points[current_alley] & remaining_points
@@ -182,6 +189,9 @@ class RobustAlleySolver(WarehouseTSPSolver):
             print(f"  ⚠️  RobustAlley: Échec de construction, {len(remaining_points)} points restants")
             return None
         
+        if iteration >= max_iterations:
+            print(f"  ⚠️  RobustAlley: Maximum d'itérations atteint ({max_iterations})")
+        
         # Ajouter l'arrivée
         if distance_matrix[current_point, arrival_idx] < float('inf'):
             tour.append(arrival_idx)
@@ -210,10 +220,10 @@ class RobustAlleySolver(WarehouseTSPSolver):
         return closest
     
     def _find_best_next_alley(self, current_point: int,
-                            alley_points: Dict[str, Set[int]],
-                            remaining_points: Set[int],
-                            distance_matrix: np.ndarray,
-                            visited_alleys: List[str]) -> Tuple[Optional[str], Optional[int]]:
+                        alley_points: Dict[str, Set[int]],
+                        remaining_points: Set[int],
+                        distance_matrix: np.ndarray,
+                        visited_alleys: List[str]) -> Tuple[Optional[str], Optional[int]]:
         """
         Trouve la meilleure allée suivante avec système de score
         Score = (nb_points * weight) - distance
@@ -223,7 +233,7 @@ class RobustAlleySolver(WarehouseTSPSolver):
         best_point = None
         
         for alley, points in alley_points.items():
-            if alley == 'SPECIAL' or alley == 'UNKNOWN':
+            if alley in ['SPECIAL', 'UNKNOWN']:
                 continue
             
             # Points de cette allée non visités
@@ -237,7 +247,7 @@ class RobustAlleySolver(WarehouseTSPSolver):
             )
             
             if accessible_point is None:
-                continue
+                continue  # Ici c'est OK, on passe à l'allée suivante
             
             # Calcul du score
             distance = distance_matrix[current_point, accessible_point]
@@ -252,6 +262,12 @@ class RobustAlleySolver(WarehouseTSPSolver):
                 best_score = score
                 best_alley = alley
                 best_point = accessible_point
+        
+        # Ajoutez du logging pour déboguer
+        if best_point is None:
+            print(f"  Debug: Aucun point accessible trouvé depuis {current_point}")
+            print(f"  Debug: Alleys disponibles: {list(alley_points.keys())}")
+            print(f"  Debug: Points restants: {remaining_points}")
         
         return best_alley, best_point
     
@@ -407,11 +423,11 @@ class RobustAlleySolver(WarehouseTSPSolver):
         """Solution de secours"""
         # Essayer d'abord S-Shape (très robuste)
         try:
-            from .s_shape_solver import SShapeSolver
-            solver = SShapeSolver()
+            from .rob_s_shape import RobustSShapeSolver
+            solver = RobustSShapeSolver
             result = solver.solve(distance_matrix, depot_idx, arrival_idx)
             if result:
-                result['solver'] = self.name + " (S-Shape fallback)"
+                result['solver'] = self.name + " (Robust S-Shape fallback)"
                 return result
         except:
             pass
