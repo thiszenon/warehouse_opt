@@ -25,7 +25,8 @@ from src.algorithms import (
     RobustSShapeSolver,
     RobustUShapeSolver,
     AlleyFirstSolver,
-    RobustAlleySolver
+    RobustAlleySolver,
+    DynamicStructureSolver
 )
 from src.data.commandes import get_commandes
 
@@ -80,8 +81,10 @@ def test_avec_depot_fixe():
         #UShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,strategy='alternating',return_level='optimal'),
         #RobustUShapeSolver(hangar=hangar,commande=commande, points_complets=graphe.points_complets,fallback_to_simple=False),
         #RobustSShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,fallback_to_simple=False),
-        #AlleyFirstSolver(hangar=hangar,points_complets=graphe.points_complets)
-        #RobustAlleySolver(hangar=hangar,points_complets=graphe.points_complets,consolidation_enabled=False)
+        #AlleyFirstSolver(hangar=hangar,points_complets=graphe.points_complets),
+        #RobustAlleySolver(hangar=hangar,points_complets=graphe.points_complets,consolidation_enabled=False),
+        DynamicStructureSolver(hangar=hangar,points_complets=graphe.points_complets,use_heuristic_for_large_k=False)
+
 
     ]
     
@@ -287,6 +290,12 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
             consolidation_enabled=False
         )
         print("- robust solver")
+    elif algorithm_type == 'dynamic_solver':
+        solver = DynamicStructureSolver(
+            hangar=hangar,
+            points_complets= graphe.points_complets,
+            use_heuristic_for_large_k=False
+        )
 
         
 
@@ -1012,7 +1021,7 @@ def main():
     solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='nearest',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='dynamic_solver',display_plot=True)
     
     # Analyse comparative
     print("\n" + "=" * 70)
