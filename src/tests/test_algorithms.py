@@ -72,7 +72,7 @@ def test_avec_depot_fixe():
     print("-" * 50)
     
     solvers = [
-        NearestNeighborSolver(start_at_nearest=True),
+        #NearestNeighborSolver(start_at_nearest=True),
         #InsertionSolver(seed=42, insertion_strategy='cheapest'),
         #InsertionSolver(seed=42, insertion_strategy='farthest'),
         #TwoOptSolver(),
@@ -82,8 +82,8 @@ def test_avec_depot_fixe():
         #RobustUShapeSolver(hangar=hangar,commande=commande, points_complets=graphe.points_complets,fallback_to_simple=False),
         #RobustSShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,fallback_to_simple=False),
         #AlleyFirstSolver(hangar=hangar,points_complets=graphe.points_complets),
-        #RobustAlleySolver(hangar=hangar,points_complets=graphe.points_complets,consolidation_enabled=False),
-        DynamicStructureSolver(hangar=hangar,points_complets=graphe.points_complets,use_heuristic_for_large_k=False)
+        #RobustAlleySolver(hangar=hangar,points_complets=graphe.points_complets,consolidation_enabled=True),
+        DynamicStructureSolver(hangar=hangar,points_complets=graphe.points_complets)
 
 
     ]
@@ -293,8 +293,7 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
     elif algorithm_type == 'dynamic_solver':
         solver = DynamicStructureSolver(
             hangar=hangar,
-            points_complets= graphe.points_complets,
-            use_heuristic_for_large_k=False
+            points_complets= graphe.points_complets
         )
 
         
