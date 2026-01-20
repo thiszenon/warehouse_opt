@@ -15,6 +15,9 @@ class OptParcours:
     def __init__(self,hangar,commande:List[Tuple[str,int]]):
         self.hangar = hangar
         self.commande = commande
+        self.groupes_by_allee = self.groupes_by_allee()
+
+
 
 
     #Construction de l'algorithme d'optimisation du parcours lors de la collecte
@@ -139,13 +142,98 @@ class OptParcours:
                         break
         return ordre
     
+
+
+    ##ETAPE 2:
+    #    - Partitionner une allée en 2 niveau: niveau haut et bas. 
+    #    - organiniser les points dans chaque partie du niveau
+    #    - définir combien des points dans chaque partie.
+    def analyser_parties_allee(self,allee:str)-> Dict:
+        """
+        Analyse dans quelle(s) partie(s) se trouvent les points d'une allée
+
+        :param allee: code de l'allée (ex: 'A','B')
+        :type allee: str
+        :return: dictionnaire avec analyse des parties
+        :rtype: Dict
+        """
+        #verifier que l'allée existe dans les groupes
+        if allee not in self.grouper_by_allee:
+            return {}
         
+        #recuperer les points de cette allée
+        points = self.grouper_by_allee[allee]
+
+        #determiner le milieu de l'allée
+        milieu = self.hangar.Longueur/2
+
+        #séparer les points en parties basse et haute
+        partie_basse = []
+        partie_haute = []
+
+        for point in points:
+            x,y = self.hangar.points[point]
+            if y <= milieu:
+                partie_basse.append(point)
+            else:
+                partie_haute.append(point)
+        #Trier selon le sens de l'allée
+        #déterminer le sens
+        if len(allee)==2:
+            if allee in ['BB','DD','FF','HH','AB']:
+                base = allee[1]
+            else:
+                base = allee[0]
+        else:
+            base = allee        
+        sens = self.hangar.sens.get(base,1)
+
+        #Pour une montée: du bas vers le haut
+        #Pour une descente: du haut vers le bas
+        if sens ==1: #cas 1 montée
+            partie_basse.sort(key=lambda p:self.hangar.points[p][1]) #croissant
+            partie_haute.sort(key=lambda p: self.hangar.points[p][1])
+        else:
+            partie_basse.sort(key=lambda p : self.hangar.points[p][1], reverse=True)
+            partie_haute.sort(key=lambda p : self.hangar.points[p][1], reverse=True)
+        return {
+            'allee':allee,
+            'sens':'montée' if sens == 1 else 'descente',
+            'partie_basse': partie_basse,
+            'partie_hausse': partie_haute,
+            'a_partie_basse': len(partie_basse) > 0,
+            'a_partie_haute': len(partie_haute) > 0,
+            'total_points': len(points),
+            'points_basse': len(partie_basse),
+            'points_haute': len(partie_haute)
+        }
+    
 
 
-##ETAPE 2:
-#    - Partitionner une allée en 2 niveau: niveau haut et bas. 
-#    - organiniser les points dans chaque partie du niveau
-#    - définir combien des points dans chaque partie.
+    def afficher_partitions(self):
+        """
+        Affiche l'analyse des parties pour toutes les allées
+
+        :param self: Description
+        """
+        print("\n" + "="*60)
+        print("Etape 2 - ANALYZE DES PARTIES HAUTE/BASSE PAR allée")
+        print("="*60)
+
+        for allee in self.groupes_by_allee.keys():
+            analyse = self.analyser_parties_allee(allee)
+            print(f"\nAllée {allee} ({analyse['sens']}):")
+            print(f" Total points: {analyse['total_points']}")
+
+            if analyse['a_partie_basse']:
+                for p in analyse['partie_basse']:
+                    points_str = ",".join([f"{p[0]}{p[1]}(y={self.hangar.points[p][1]:.0f})"])
+                print(f"Partie basse : {analyse['points_basse']} point(s) -> {points_str}")
+            
+            if analyse['a_partie_haute']:
+                for p in analyse['partie_haute']:
+                    points_str = ",".join([f"{p[0]}{p[1]}(y={self.hangar.points[p][1]:.0f})"])
+                print(f"Partie basse : {analyse['points_basse']} point(s) -> {points_str}")
 
 ## ETAPE 3:
 #    - Construire le graphe des partitions
@@ -174,7 +262,7 @@ class OptParcours:
         print("=== TEST alterner_allee ===")
         ordre = alterner_allee(groupes_test, hangar_test)
         print(f"Ordre alterné obtenu: {ordre}")
-        
+    
         # Afficher le sens de chaque allée
         print("\nVérification des sens:")
         for i, allee in enumerate(ordre):
@@ -188,3 +276,8 @@ class OptParcours:
             
             sens = hangar_test.sens.get(base, 1)
             print(f"  Position {i}: {allee} ({'montée' if sens==1 else 'descente'})")
+        # Afficher les partitions
+        
+        afficher_partitions()
+
+
