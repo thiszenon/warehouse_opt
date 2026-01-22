@@ -35,7 +35,7 @@ class Hangar:
         for k, allee in enumerate(self.allees):
             self.centres[allee] = largeur_allee * (k + 0.5)
         
-        #Largeur totale
+        #Largeur totale du hangar pour en estimer les dimensions
         self.largeur_totale = len(self.allees) * largeur_allee
 
         #Points vides pour l'instant
@@ -75,9 +75,9 @@ class Hangar:
         
         :param commande: Liste de tuples (allée, numéro)
         """
-        for allee, n in commande:
-            if(allee,n) not in self.points:
-                self._ajouter_point(allee,n)
+        for allee, num in commande:
+            if(allee,num) not in self.points:
+                self._ajouter_point(allee,num)
             #end if
     #end palcer_commande
 
@@ -157,7 +157,7 @@ class Hangar:
 
         #offset par allée pour eviter les superpositions
         offsets = {'H':0.0, 'G':0.1,'F':0.2,'E':0.3,'D':0.4,'C':0.5,'B':0.6,'A':0.7,
-                   'HH':0.0, 'GG':0.1, 'FF':0.2, 'EE':0.3, 'DD':0.4, 'CC':0.5, 'BB':0.6, 'AA':0.7, 'AB':0.6
+                'HH':0.0, 'GG':0.1, 'FF':0.2, 'EE':0.3, 'DD':0.4, 'CC':0.5, 'BB':0.6, 'AA':0.7, 'AB':0.6
         }
 
         #Dessiner les allées (rectangles)
@@ -297,7 +297,7 @@ class Hangar:
         """Cette methode verifie si le deplacement vertical respecte le sens de circulation"""
         #Trouver l'allée de base
         if len(allee) == 2:
-            if allee in ['BB','DD','FF','HH','AB']:
+            if allee in ['BB','DD','FF','HH','AB']: #'AB' prendra 'B' puisque 'AB' est dans B est descente
                 allee_base = allee[1]
             else:
                 allee_base = allee[0]

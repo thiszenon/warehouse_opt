@@ -4,6 +4,8 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from geometry.hangar import Hangar
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches 
 #from graph.graph_collect_depot import GraphCollectWithDepot
 
 
@@ -230,11 +232,122 @@ class OptParcours:
             if analyse['a_partie_haute']:
                 points_str = ",".join([f"{p[0]}{p[1]}(y={self.hangar.points[p][1]:.0f})" for p in analyse['partie_haute']])
                 print(f"Partie haute : {analyse['points_haute']} point(s) -> {points_str}")
-"""----------------------------------------------"""
-## ETAPE 3:
-#    - Construire le graphe des partitions
-#    - pacourir ou passer par chaque partition une et une seule fois en respectant le sens
-# 
+
+
+    ## ETAPE 3:
+    #    - Construire le graphe des partitions
+    #    - pacourir ou passer par chaque partition une et une seule fois en respectant le sens
+    def construire_graphe_partitions(self):
+        """
+        Etape 3: construire le graphe des partitions 
+        
+        Returns:
+            Dictionnaire avec deux clés: 'noeuds' et 'aretes'
+        """
+        noeuds = []
+        for allee in self.groupes_by_allee.keys():
+            analyse = self.analyser_parties_allee(allee)
+
+            #créer un noeud pour la partie basse si elle existe
+            if analyse['a_partie_basse']:
+                id_noeud = f"{allee}_basse"
+                noeud_basse = {
+                    'id':id_noeud,
+                    'allee':allee,
+                    'type':'basse',
+                    'sens':analyse['sens'],
+                    'points':analyse['partie_basse'],
+                    'nb_points':analyse['points_basse'],
+                    'is_partie_basse':True,
+                    'is_partie_haute': False
+                }
+                noeuds.append(noeud_basse)
+            #créer un noeud pour la partie haute si elle existe
+            if analyse['a_partie_haute']:
+                id_noeud = f"{allee}_haute"
+                noeud_haute = {
+                    'id':id_noeud,
+                    'allee':allee,
+                    'type':'haute',
+                    'sens':analyse['sens'],
+                    'points':analyse['partie_haute'],
+                    'nb_points':analyse['points_haute'],
+                    'is_partie_basse':False,
+                    'is_partie_haute': True
+                }
+                noeuds.append(noeud_haute)
+        #Graphe initial :
+        graphe = {
+            'noeuds': noeuds,
+            'aretes': [],
+            'nb_noeuds': len(noeuds),
+            'nb_aretes':0
+        }
+        return graphe
+    
+    def affiche_graphe_partitions(self, graphe=None):
+        """Affiche le graphe des partitions"""
+        if graphe is None:
+            graphe = self.construire_graphe_partitions()
+        
+        print("\n" + "="*60)
+        print("ÉTAPE 3 - GRAPHE DES PARTITIONS (sans arêtes)")
+        print("="*60)
+        
+        print(f"\nNombre total de partitions (nœuds): {graphe['nb_noeuds']}")
+        
+        print("\nDétail des nœuds:")
+        for i, noeud in enumerate(graphe['noeuds'], 1):
+            points_str = ", ".join([f"{p[0]}{p[1]}" for p in noeud['points']])
+            print(f"  {i}. {noeud['id']}:")
+            print(f"     Allée: {noeud['allee']}, Type: {noeud['type']}, Sens: {noeud['sens']}")
+            print(f"     Points: {points_str} ({noeud['nb_points']} points)")
+        
+        print(f"\nArêtes: {graphe['nb_aretes']} (à définir à l'étape 4)")
+    
+    def visualiser_graphe_partitions(self, graphe=None):
+        """
+        Ultra simple: juste des ronds colorés
+        """
+        if graphe is None:
+            graphe = self.construire_graphe_partitions()
+        
+        import matplotlib.pyplot as plt
+        
+        fig, ax = plt.subplots(figsize=(8, 8))
+        
+        # Disposer en cercle
+        n = len(graphe['noeuds'])
+        
+        for i, noeud in enumerate(graphe['noeuds']):
+            angle = 2 * np.pi * i / n
+            x = np.cos(angle) * 3
+            y = np.sin(angle) * 3
+            
+            # Couleur
+            couleur = 'blue' if noeud['type'] == 'basse' else 'red'
+            
+            # Rond
+            cercle = plt.Circle((x, y), 0.4, 
+                            facecolor=couleur, 
+                            edgecolor='black', 
+                            linewidth=2)
+            ax.add_patch(cercle)
+            
+            # Texte
+            ax.text(x, y, f"{noeud['id']}\n{noeud['nb_points']}p", 
+                ha='center', va='center', 
+                fontsize=9, color='white', fontweight='bold')
+        
+        # Cadre invisible
+        ax.set_xlim(-4, 4)
+        ax.set_ylim(-4, 4)
+        ax.set_aspect('equal')
+        ax.axis('off')
+        
+        plt.tight_layout()
+        return fig, ax
+
 ## ETAPE 4:
 #    - trouver un ordre de parcours de ces partitions en minimisant la distance .
 #    - deployer les élements de chaque partition equivaut à l'ordre du parcours de tous les points. 
@@ -270,6 +383,7 @@ if __name__ == "__main__":
     ordre = opt.alterner_allee(opt.groupes_by_allee, hangar_test)
     print(f"Ordre alterné obtenu: {ordre}")
 
+
     # Afficher le sens de chaque allée
     print("\nVérification des sens:")
     for i, allee in enumerate(ordre):
@@ -283,6 +397,15 @@ if __name__ == "__main__":
         
         sens = hangar_test.sens.get(base, 1)
         print(f"  Position {i}: {allee} ({'montée' if sens==1 else 'descente'})")
+
+    # Test Etape 3
+    print("\n=== ETAPE 3 - GRAPHE DES PARTITIONS===")
+    graphe_partitions = opt.construire_graphe_partitions()
+    opt.affiche_graphe_partitions(graphe_partitions)
+    #visualisation
+    fig, ax = opt.visualiser_graphe_partitions(graphe_partitions)
+    plt.show()
+    
 
 
 
