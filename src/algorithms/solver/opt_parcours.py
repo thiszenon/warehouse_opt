@@ -348,9 +348,255 @@ class OptParcours:
         plt.tight_layout()
         return fig, ax
 
-## ETAPE 4:
-#    - trouver un ordre de parcours de ces partitions en minimisant la distance .
-#    - deployer les élements de chaque partition equivaut à l'ordre du parcours de tous les points. 
+    ## ETAPE 4:
+    #    - definir les points d'entrée et de sortie d'une partition
+    #    - trouver un ordre de parcours de ces partitions en minimisant la distance .
+    #    - deployer les élements de chaque partition equivaut à l'ordre du parcours de tous les points. 
+
+    def points_acces_partition(self,noeud:Dict):
+        """
+        Définir les points d'entée et de sortie d'une partition
+        Règles: 
+            - partie basse : entrée en Niveau 1(0), sortie en Niveau 2 (L/2)
+            - partie haute : entrée en Niveau 3(L), sortie en Niveau 2 (L/2)
+        """
+        allee = noeud['allee']
+        #coordonnée x du centre de l'allée
+        if len(allee)==2:
+            if allee in ['BB','DD','FF','HH','AB']:
+                allee_base = allee[1]
+            else:
+                allee_base = allee[0]
+        else:
+            allee_base= allee
+        
+        sens = self.hangar.sens.get(allee_base,1)
+        #coordonnée x du centre de l'allée
+        x_centre = self.hangar.centres.get(allee_base)
+        if x_centre is None:
+            x_centre = self.hangar.centres.get(allee[0],0)
+        L=self.hangar.Longueur
+        L2 = L/2
+
+        
+        if noeud['type'] == 'basse': # à verifier 
+            #partie basse : entrée par N1(0), sortie par N2(L/2)
+            if sens == 1:
+                entree = ('ENTREE',(x_centre,0))
+                sortie = ('SORTIE',(x_centre, L2))
+            else:
+                entree = ('ENTREE',(x_centre,L2))
+                sortie = ('SORTIE',(x_centre, 0))
+        else: #partie HAUTE
+            if sens == 1:
+                entree = ('ENTREE',(x_centre,L2))
+                sortie = ('SORTIE',(x_centre,L))
+            else:
+                entree = ('ENTREE',(x_centre,L))
+                sortie = ('SORTIE',(x_centre,L2))
+        return{
+            'entree':entree,
+            'sortie':sortie,
+            'distance_interne': self.calculer_distance_interne(entree[1],sortie[1],noeud)
+        }
+    
+    def calculer_distance_interne(self, point_entree:Tuple[float,float],point_sortie:Tuple[float,float],noeud:Dict) -> float:
+        """
+        Calcule la distance pour traverser la partition
+        (distance d'entrée à sortie selon le sens)
+        """
+        #créer des points factices pour utiliser la méthode distance du hangar
+        allee = noeud['allee']
+        #on crée des identifiants factices pour les points d'entrée/sortie
+        id_entree = (allee,-1)
+        id_sortie = (allee,-2)
+
+        #ajouter ces points temporairement au hangar
+        self.hangar.points[id_entree] = point_entree
+        self.hangar.points[id_sortie] = point_sortie
+
+        #calculer la distance selon le sens
+        distance = self.hangar.distance(id_entree,id_sortie)
+
+        #nettoyage des points temporaires
+        del self.hangar.points[id_entree]
+        del self.hangar.points[id_sortie]
+
+        return distance
+    
+    def matrice_distances_partitions(self,graphe=None):
+        """
+        Calcule la matrice des distances entre toutes les partitions
+        returns:
+            tuple:(matrice,liste_noeuds,points_acces)
+
+        """
+        if graphe is None:
+            graphe = self.construire_graphe_partitions()
+        noeuds = graphe['noeuds']
+        n = len(noeuds)
+        #definir les points d'accès pour chaque partition
+        points_acces = []
+        for noeud in noeuds:
+            acces = self.points_acces_partition(noeud)
+            points_acces.append(acces)
+        #initialiser la matrice
+        matrice = np.full((n,n), float('inf'))
+
+        #remplir la matrice
+        for i in range(n):
+            for j in range(n):
+                if i == j:
+                    matrice[i][j]=0.0
+                else:
+                    #distance = distance(sortie_i -> entrée_j) + distance_interne_j
+                    point_sortie_i = points_acces[i]['sortie'][1]
+                    point_entree_j = points_acces[j]['entree'][1]
+
+                    #utiliser les vraies allées
+                    allee_i = noeuds[i]['allee']
+                    allee_j = noeuds[j]['allee']
+
+
+                    #Créer des points factices
+                    id_sortie_i = (allee_i,-10-i)
+                    id_entree_j = (allee_j,-20-j)
+                    
+
+                    self.hangar.points[id_sortie_i] = point_sortie_i
+                    self.hangar.points[id_entree_j] = point_entree_j
+
+                    #calculer la distance externe
+                    dist_externe = self.hangar.distance(id_sortie_i,id_entree_j)
+
+                    #nettoyer
+                    del self.hangar.points[id_sortie_i]
+                    del self.hangar.points[id_entree_j]
+
+                    #distance totale
+                    matrice[i][j] = dist_externe + points_acces[j]['distance_interne']
+        return matrice, noeuds, points_acces
+    def tester_matrice_distances(self, graphe=None):
+        """
+        Test complet de la matrice des distances
+        """
+        print("\n" + "="*60)
+        print("TEST ÉTAPE 4 - MATRICE DES DISTANCES ENTRE PARTITIONS")
+        print("="*60)
+        
+        if graphe is None:
+            graphe = self.construire_graphe_partitions()
+        
+        # 1. Afficher les partitions
+        print(f"\nNombre de partitions: {len(graphe['noeuds'])}")
+        for i, noeud in enumerate(graphe['noeuds']):
+            print(f"  {i}. {noeud['id']} (Allée: {noeud['allee']}, Type: {noeud['type']}, Sens: {noeud['sens']})")
+        
+        # 2. Calculer la matrice
+        matrice, noeuds, points_acces = self.matrice_distances_partitions(graphe)
+        
+        # 3. Afficher les points d'accès
+        print("\nPoints d'accès des partitions:")
+        for i, (noeud, acces) in enumerate(zip(noeuds, points_acces)):
+            print(f"\n  Partition {noeud['id']}:")
+            print(f"    Entrée: ({acces['entree'][1][0]:.1f}, {acces['entree'][1][1]:.1f})")
+            print(f"    Sortie: ({acces['sortie'][1][0]:.1f}, {acces['sortie'][1][1]:.1f})")
+            print(f"    Distance interne: {acces['distance_interne']:.1f} m")
+        
+        # 4. Afficher la matrice
+        print(f"\nMatrice des distances ({len(matrice)}x{len(matrice)}):")
+        print("     ", end="")
+        for j in range(len(matrice)):
+            print(f"{noeuds[j]['id']:>10}", end="")
+        print()
+        
+        for i in range(len(matrice)):
+            print(f"{noeuds[i]['id']:5}", end="")
+            for j in range(len(matrice)):
+                if matrice[i][j] == float('inf'):
+                    print(f"{'INF':>10}", end="")
+                elif i == j:
+                    print(f"{'0':>10}", end="")
+                else:
+                    print(f"{matrice[i][j]:>10.1f}", end="")
+            print()
+        
+        # 5. Analyser la connexité
+        print("\nAnalyse de connexité:")
+        n = len(matrice)
+        for i in range(n):
+            inf_count = sum(1 for j in range(n) if j != i and matrice[i][j] == float('inf'))
+            if inf_count > 0:
+                print(f"  Partition {noeuds[i]['id']}: {inf_count} partitions inaccessibles")
+            else:
+                print(f"  Partition {noeuds[i]['id']}: accessible à toutes les autres partitions")
+        
+        return matrice, noeuds, points_acces
+
+def visualiser_graphe_partitions(self, graphe=None):
+    """
+    Visualise les partitions (version simple)
+    """
+    if graphe is None:
+        graphe = self.construire_graphe_partitions()
+    
+    import matplotlib.pyplot as plt
+    
+    fig, ax = plt.subplots(figsize=(10, 8))
+    
+    # Tracer le hangar
+    self.hangar.dessiner("Partitions du hangar", ax=ax)
+    
+    # Tracer les partitions
+    for noeud in graphe['noeuds']:
+        # Obtenir les points d'accès
+        acces = self.points_acces_partition(noeud)
+        entree = acces['entree'][1]
+        sortie = acces['sortie'][1]
+        
+        # Couleur selon le type
+        couleur = 'blue' if noeud['type'] == 'basse' else 'red'
+        
+        # Tracer entrée et sortie
+        ax.plot(entree[0], entree[1], '^', markersize=15, 
+                color=couleur, markeredgecolor='black', zorder=15, label=f"Entrée {noeud['type']}")
+        ax.plot(sortie[0], sortie[1], 'v', markersize=15,
+                color=couleur, markeredgecolor='black', zorder=15, label=f"Sortie {noeud['type']}")
+        
+        # Tracer la ligne entre entrée et sortie
+        ax.plot([entree[0], sortie[0]], [entree[1], sortie[1]], 
+                '--', color=couleur, alpha=0.5, linewidth=2)
+        
+        # Texte avec l'ID
+        ax.text((entree[0] + sortie[0])/2, (entree[1] + sortie[1])/2,
+                noeud['id'], ha='center', va='center',
+                fontsize=9, fontweight='bold',
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
+    
+    # Titre
+    ax.set_title(f"Partitions: {len(graphe['noeuds'])} partitions", fontsize=12)
+    
+    # Légende
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], marker='^', color='w', markerfacecolor='blue', 
+               markersize=10, label='Entrée partie basse'),
+        Line2D([0], [0], marker='v', color='w', markerfacecolor='blue', 
+               markersize=10, label='Sortie partie basse'),
+        Line2D([0], [0], marker='^', color='w', markerfacecolor='red', 
+               markersize=10, label='Entrée partie haute'),
+        Line2D([0], [0], marker='v', color='w', markerfacecolor='red', 
+               markersize=10, label='Sortie partie haute'),
+    ]
+    ax.legend(handles=legend_elements, loc='upper left')
+    
+    plt.tight_layout()
+    return fig, ax
+    
+
+
+
+
 
 
 # Test
@@ -405,6 +651,10 @@ if __name__ == "__main__":
     #visualisation
     fig, ax = opt.visualiser_graphe_partitions(graphe_partitions)
     plt.show()
+
+    print("\n ETAPE 4 - MATRICE DES DISTANCES")
+    matrice, noeuds, points_acces = opt.tester_matrice_distances(graphe_partitions)
+
     
 
 
