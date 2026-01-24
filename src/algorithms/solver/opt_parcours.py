@@ -22,10 +22,19 @@ class OptParcoursSolver(WarehouseTSPSolver):
         super().__init__(name)
         self.hangar = hangar
         self.points_complets = points_complets
+        #DEBUG 
+        print(f"\n=== INIT Opt parcours")
+        print(f"Points complets: {self.points_complets}")
+        print(f"Dépot label: {self.hangar.depot_label}")
+        print(f"Arrivée label: {self.hangar.arrival_label}")
+    
         self.NIVEAUX = hangar.niveaux
         #placer la commande dans le hangar
         #self.hangar.placer_commande(commande)
         self.groupes_by_allee = self._grouper_by_allee()
+        print(f"Groupes par allée: {self.groupes_by_allee.keys()}")
+        print("=============================")
+
         self.graphe_partitons = self.construire_graphe_partitions()
         self.matrice_distances, self.noeuds, self.points_acces = self._matrice_distances_partitions()
         self.afficher_partitions()
@@ -37,8 +46,40 @@ class OptParcoursSolver(WarehouseTSPSolver):
         start_time = time.time()
         if arrival_idx is None:
             arrival_idx = depot_idx
+
+
+        #1. Essayer l'algorithme amélioré
+        depart = self._point_from_index(depot_idx)
+        arrivee = self._point_from_index(arrival_idx)
+
+        resultat = self._parcours_glouton_ameliore(depart,arrivee)
+        if resultat['success']:
+            # Construire tour
+            tour = [depot_idx]
+            for point in resultat['ordre_points']:
+                idx = self._point_to_index(point)
+                if idx is not None:
+                    tour.append(idx)
+            tour.append(arrival_idx)
+            distance = self.calculate_tour_distance(tour,distance_matrix)
+            return self._creer_resultat(tour,distance,start_time,optimal=False)
         
-        #Si pas de partitions, solution triviale
+        #2. FALLBACK: 
+        print("⚠️  Utilisation du fallback simple")
+        n = distance_matrix.shape[0]
+        tour = [depot_idx]
+        
+        # Ajouter tous les points dans l'ordre
+        for i in range(1, n):
+            if i != arrival_idx:
+                tour.append(i)
+        
+        tour.append(arrival_idx)
+        distance = self.calculate_tour_distance(tour, distance_matrix)
+        
+        return self._creer_resultat(tour, distance, start_time, optimal=False)
+        
+        """#Si pas de partitions, solution triviale
         if not self.noeuds:
             tour = [depot_idx,arrival_idx]
             distance = distance_matrix[depot_idx, arrival_idx] if distance_matrix[depot_idx,arrival_idx] < float('inf') else 0
@@ -61,6 +102,7 @@ class OptParcoursSolver(WarehouseTSPSolver):
         
         distance = self.calculate_tour_distance(tour,distance_matrix)
         return self._creer_resultat(tour,distance,start_time,optimal=False)
+        """
     #end solve
 
     # ====================== Méthodes d'interface ===============
@@ -128,6 +170,59 @@ class OptParcoursSolver(WarehouseTSPSolver):
             'n_total': n_partitions
         }
     #end _parcous_glouton
+    def _parcours_glouton_ameliore(self, depart, arrivee):
+        """Teste plusieurs options d'accès par partition"""
+        if not self.noeuds:
+            return {'success': False, 'message': "Aucune partition"}
+        
+        # Pour chaque partition, préparer plusieurs options
+        toutes_options = []
+        for noeud in self.noeuds:
+            options = self._points_acces_realistes(noeud)
+            toutes_options.append(options)
+        
+        # Algorithme amélioré
+        position = depart
+        visitees = []
+        ordre_points = []
+        distance_totale = 0
+        non_visitees = list(range(len(self.noeuds)))
+        
+        while non_visitees:
+            meilleur_idx = None
+            meilleure_option = None
+            meilleure_distance = float('inf')
+            
+            # Chercher la partition + option la plus accessible
+            for idx in non_visitees:
+                for option in toutes_options[idx]:
+                    dist = self._distance_contrainte(position, option['entree'][1])
+                    
+                    # Choisir la meilleure option accessible
+                    if dist < meilleure_distance and dist < float('inf'):
+                        meilleure_distance = dist
+                        meilleur_idx = idx
+                        meilleure_option = option
+            
+            if meilleur_idx is None:
+                # Si aucune option n'est accessible, échec
+                break
+            
+            # Visiter avec l'option choisie
+            visitees.append(meilleur_idx)
+            non_visitees.remove(meilleur_idx)
+            
+            noeud = self.noeuds[meilleur_idx]
+            distance_totale += meilleure_distance + meilleure_option['distance_interne']
+            position = meilleure_option['sortie'][1]
+            ordre_points.extend(noeud['points'])
+        
+        # Résultat
+        return {
+            'success': len(visitees) > 0,
+            'ordre_points': ordre_points,
+            'distance': distance_totale
+        }
 
     def _convertir_en_tour(self,resultat,depot_idx,arrival_idx):
         """Convertir le resultat interne en tour standard """
@@ -160,8 +255,16 @@ class OptParcoursSolver(WarehouseTSPSolver):
     
     def _point_to_index(self,point):
         """ convertir un point en index"""
-        if point in self.points_complets:
-            return self.points_complets.index(point)
+        try:
+            if point in self.points_complets:
+                return self.points_complets.index(point)
+            else:
+                #chercher par tuple
+                for i,p in enumerate(self.points_complets):
+                    if isinstance(p,tuple) and p == point:
+                        return i
+        except Exception as ex:
+            print(f"Erreur _point_to_index: {ex}, point={point}")
         return None
     
     #================ QUELQUES METHODES UTILITAIRES=======
@@ -203,13 +306,31 @@ class OptParcoursSolver(WarehouseTSPSolver):
         if not self.points_complets:
             print("commande vide")
             return {}
-        
+        #extraire les lables comme strings
+        depot_str = self.hangar.depot_label[0] if isinstance(self.hangar.depot_label,tuple) else str(self.hangar.depot_label)
+        arrival_str = self.hangar.arrival_label[0] if isinstance(self.hangar.arrival_label,tuple) else str(self.hangar.arrival_label)
+
+        print(f"DEBUG: depot_str='{depot_str}', arrival_str='{arrival_str}'")
+
         groupes = {}
-        for allee,position in self.points_complets:
-            if allee not in groupes:
-                groupes[allee]= [] # si l'allée n'est pas encore dans le groupe on la crée
-            groupes[allee].append((allee,position))
-        
+        for point in self.points_complets:
+            #extraire l'allée et sa position
+            if isinstance(point,tuple) and len(point)==2:
+                allee, position = point
+                allee_str = str(allee)
+                print(f"DEBUG: Point {allee_str}{position} - allee_str='{allee_str}'")
+                
+                #EXCLURE LES POINTS SPECIAUX
+                if allee in [depot_str, arrival_str]:
+                    print(f"DEBUG: Exclu (point spécial)")
+                    continue
+                if allee_str not in groupes:
+                    groupes[allee_str] = [] # si l'allée n'est pas encore dans le groupe on la crée
+                groupes[allee_str].append((allee_str,position))
+            else:
+                print(f"DEBUG: Format de point inattendu: {point}")
+        print(f"DEBUG: Groupes après filtrage: {list(groupes.keys())}")
+
         #trier les points dans chaque allée par leur positon y
         for allee in groupes:
             groupes[allee].sort(key = lambda p: self.hangar.points[p][1])
@@ -572,6 +693,53 @@ class OptParcoursSolver(WarehouseTSPSolver):
             'distance_interne': self._calculer_distance_interne(entree[1],sortie[1],noeud)
         }
     
+    def _points_acces_realistes(self, noeud):
+        """
+        Points d'accès réalistes - au lieu de seulement (0, L/2, L)
+        """
+        options = []
+        
+        # Option 1 : Points fixes originaux (gardée)
+        fixe = self._points_acces_partition(noeud)
+        options.append(fixe)
+        
+        # Option 2 : Points RÉELS de la partition comme alternatives
+        points = noeud['points']
+        
+        if points:
+            # ENTRÉE : Premier point si proche du début
+            premier = points[0]
+            coord_premier = self.hangar.points[premier]
+            y_premier = coord_premier[1]
+            
+            # SORTIE : Dernier point si proche de la fin  
+            dernier = points[-1]
+            coord_dernier = self.hangar.points[dernier]
+            y_dernier = coord_dernier[1]
+            
+            L = self.hangar.Longueur
+            sens = noeud['sens']
+            
+            # Alternative réaliste selon le contexte
+            if sens == 'montée':
+                if y_premier < L/3:  # Point proche du bas
+                    option_alt = {
+                        'entree': ('ENTREE_REAL', coord_premier),
+                        'sortie': fixe['sortie'],
+                        'distance_interne': abs(y_dernier - y_premier)  # Estimation simple
+                    }
+                    options.append(option_alt)
+            else:  # descente
+                if y_dernier > 2*L/3:  # Point proche du haut
+                    option_alt = {
+                        'entree': fixe['entree'],
+                        'sortie': ('SORTIE_REAL', coord_dernier),
+                        'distance_interne': abs(y_dernier - y_premier)
+                    }
+                    options.append(option_alt)
+        
+        return options
+    
     def _calculer_distance_interne(self, point_entree:Tuple[float,float],point_sortie:Tuple[float,float],noeud:Dict) -> float:
         """
         Calcule la distance pour traverser la partition
@@ -810,24 +978,29 @@ class OptParcoursSolver(WarehouseTSPSolver):
     
     def _distance_contrainte(self, point1, point2):
         """
-        Distance entre 2 points avec contraintes du hangar
-        Retourne float('inf') si impossible
+        Distance avec estimation si chemin impossible
         """
-        # Créer des IDs temporaires
-        id1 = ("TEMP_DIST_1", 0)
-        id2 = ("TEMP_DIST_2", 0)
+        id1 = ("TEMP", 9991)
+        id2 = ("TEMP", 9992)
         
         self.hangar.points[id1] = point1
         self.hangar.points[id2] = point2
         
         dist = self.hangar.distance(id1, id2)
         
-        # Nettoyer
         del self.hangar.points[id1]
         del self.hangar.points[id2]
         
+        # Si chemin impossible, ESTIMER au lieu de inf
+        if dist == float('inf'):
+            # Estimation euclidienne + pénalité
+            dx = point2[0] - point1[0]
+            dy = point2[1] - point1[1]
+            estimé = np.sqrt(dx*dx + dy*dy) * 1.5  # Pénalité de 50%
+            return estimé
+        
         return dist
-    
+        
 
 def visualiser_graphe_partitions(self, graphe=None):
     """
