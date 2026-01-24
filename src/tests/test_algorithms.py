@@ -28,6 +28,7 @@ from src.algorithms import (
     RobustAlleySolver,
     DynamicStructureSolver
 )
+from src.algorithms.solver.opt_parcours import OptParcoursSolver
 from src.data.commandes import get_commandes
 
 def test_avec_depot_fixe():
@@ -83,7 +84,8 @@ def test_avec_depot_fixe():
         #RobustSShapeSolver(hangar=hangar,commande=commande,points_complets=graphe.points_complets,fallback_to_simple=False),
         #AlleyFirstSolver(hangar=hangar,points_complets=graphe.points_complets),
         #RobustAlleySolver(hangar=hangar,points_complets=graphe.points_complets,consolidation_enabled=True),
-        DynamicStructureSolver(hangar=hangar,points_complets=graphe.points_complets)
+        #DynamicStructureSolver(hangar=hangar,points_complets=graphe.points_complets),
+        OptParcoursSolver(hangar=hangar,points_complets=graphe.points_complets)
 
 
     ]
@@ -295,6 +297,12 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
             hangar=hangar,
             points_complets= graphe.points_complets
         )
+    elif algorithm_type == 'opt_parcours':
+        solver = OptParcoursSolver(
+            hangar=hangar,
+            points_complets=graphe.points_complets
+        )
+        print("- opt_parcours ")
 
         
 
@@ -1020,7 +1028,7 @@ def main():
     solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='dynamic_solver',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='opt_parcours',display_plot=True)
     
     # Analyse comparative
     print("\n" + "=" * 70)

@@ -12,6 +12,7 @@ from .rob_u_shape import RobustUShapeSolver
 from .first_solver import AlleyFirstSolver
 from .robust_solver import RobustAlleySolver
 from .dynamic_solver import DynamicStructureSolver
+from .solver.opt_parcours import OptParcoursSolver
 
 __all__ = [
     'WarehouseTSPSolver',
@@ -25,7 +26,8 @@ __all__ = [
     'RobustSShapeSolver',
     'AlleyFirstSolver',
     'RobustAlleySolver',
-    'DynamicStructureSolver'
+    'DynamicStructureSolver',
+    'OptParcoursSolver'
 
 ]
 

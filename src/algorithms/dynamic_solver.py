@@ -11,7 +11,7 @@ class DynamicStructureSolver(WarehouseTSPSolver):
     """
     
     def __init__(self, hangar=None, points_complets=None,
-                 max_bruteforce_allies=8):
+                max_bruteforce_allies=8):
         """
         Args:
             hangar: Référence au hangar
@@ -28,8 +28,8 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         self.NIVEAUX = hangar.niveaux
         
     def solve(self, distance_matrix: np.ndarray, 
-              depot_idx: int = 0,
-              arrival_idx: Optional[int] = None) -> Dict:
+            depot_idx: int = 0,
+            arrival_idx: Optional[int] = None) -> Dict:
         start_time = time.time()
         
         n_total = distance_matrix.shape[0]
@@ -72,7 +72,7 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         
         # PHASE 4 : Construire le tour
         tour = self._build_tour_from_order(alley_order, alley_info, 
-                                          distance_matrix, depot_idx, arrival_idx)
+                                        distance_matrix, depot_idx, arrival_idx)
         
         if not tour:
             return self._fallback_solution(distance_matrix, depot_idx, arrival_idx)
@@ -124,7 +124,7 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         return valid_groups
     
     def _compute_alley_info(self, alley_points: Dict[str, List[int]],
-                           distance_matrix: np.ndarray) -> Dict[str, Dict]:
+                        distance_matrix: np.ndarray) -> Dict[str, Dict]:
         """Calcule les infos pour chaque allée"""
         alley_info = {}
         
@@ -227,7 +227,7 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         return None
     
     def _select_best_candidates(self, candidates: List[Tuple[int, str]],
-                               distance_matrix: np.ndarray) -> Dict[str, int]:
+                            distance_matrix: np.ndarray) -> Dict[str, int]:
         """Sélectionne le meilleur point par niveau"""
         best_by_level = {}
         
@@ -242,8 +242,8 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         return best_by_level
     
     def _optimize_alley_order(self, alley_info: Dict[str, Dict],
-                             distance_matrix: np.ndarray,
-                             depot_idx: int, arrival_idx: int) -> List[str]:
+                            distance_matrix: np.ndarray,
+                            depot_idx: int, arrival_idx: int) -> List[str]:
         """Optimise l'ordre des allées (DP simplifiée)"""
         alleys = list(alley_info.keys())
         
@@ -253,15 +253,15 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         if len(alleys) <= self.max_bruteforce_allies:
             # Force brute
             return self._bruteforce_alley_order(alleys, alley_info, 
-                                               distance_matrix, depot_idx, arrival_idx)
+                                            distance_matrix, depot_idx, arrival_idx)
         else:
             # Heuristique nearest-neighbor
             return self._nearest_neighbor_order(alleys, alley_info,
-                                               distance_matrix, depot_idx, arrival_idx)
+                                            distance_matrix, depot_idx, arrival_idx)
     
     def _bruteforce_alley_order(self, alleys: List[str], alley_info: Dict[str, Dict],
-                               distance_matrix: np.ndarray,
-                               depot_idx: int, arrival_idx: int) -> List[str]:
+                            distance_matrix: np.ndarray,
+                            depot_idx: int, arrival_idx: int) -> List[str]:
         """Force brute pour l'ordre des allées"""
         best_order = None
         best_cost = float('inf')
@@ -319,8 +319,8 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         return total_cost
     
     def _nearest_neighbor_order(self, alleys: List[str], alley_info: Dict[str, Dict],
-                               distance_matrix: np.ndarray,
-                               depot_idx: int, arrival_idx: int) -> List[str]:
+                            distance_matrix: np.ndarray,
+                            depot_idx: int, arrival_idx: int) -> List[str]:
         """Heuristique nearest-neighbor"""
         if not alleys:
             return []
@@ -360,8 +360,8 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         return ordered
     
     def _build_tour_from_order(self, alley_order: List[str], alley_info: Dict[str, Dict],
-                              distance_matrix: np.ndarray,
-                              depot_idx: int, arrival_idx: int) -> List[int]:
+                            distance_matrix: np.ndarray,
+                            depot_idx: int, arrival_idx: int) -> List[int]:
         """Construit le tour depuis l'ordre des allées"""
         tour = [depot_idx]
         current_point = depot_idx
@@ -388,7 +388,7 @@ class DynamicStructureSolver(WarehouseTSPSolver):
                 if distance_matrix[current_point, best_entry] == float('inf'):
                     # Chercher chemin intermédiaire
                     path = self._find_path(current_point, best_entry, 
-                                         distance_matrix, tour)
+                                        distance_matrix, tour)
                     if path is None:
                         return None
                     tour.extend(path)
@@ -406,7 +406,7 @@ class DynamicStructureSolver(WarehouseTSPSolver):
                 # Vérifier accessibilité
                 if distance_matrix[current_point, point_idx] == float('inf'):
                     path = self._find_path(current_point, point_idx,
-                                         distance_matrix, tour)
+                                        distance_matrix, tour)
                     if path is None:
                         return None
                     tour.extend(path)
@@ -418,7 +418,7 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         # Aller à l'arrivée
         if distance_matrix[current_point, arrival_idx] == float('inf'):
             path = self._find_path(current_point, arrival_idx,
-                                 distance_matrix, tour)
+                                distance_matrix, tour)
             if path is None:
                 return None
             tour.extend(path)
@@ -429,8 +429,8 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         return tour
     
     def _find_path(self, from_idx: int, to_idx: int,
-                  distance_matrix: np.ndarray,
-                  current_tour: List[int]) -> Optional[List[int]]:
+                distance_matrix: np.ndarray,
+                current_tour: List[int]) -> Optional[List[int]]:
         """Trouve un chemin entre deux points"""
         n = distance_matrix.shape[0]
         
@@ -459,7 +459,7 @@ class DynamicStructureSolver(WarehouseTSPSolver):
         return None
     
     def _fallback_solution(self, distance_matrix: np.ndarray,
-                          depot_idx: int, arrival_idx: int) -> Optional[Dict]:
+                        depot_idx: int, arrival_idx: int) -> Optional[Dict]:
         """Solution de secours"""
         from .insertion import InsertionSolver
         

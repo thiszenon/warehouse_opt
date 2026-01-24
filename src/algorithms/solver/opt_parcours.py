@@ -1,40 +1,211 @@
-from typing import List,Tuple,Dict,Set
+from typing import List,Tuple,Dict,Set,Optional
 import numpy as np
 import sys
 import os
+import time
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from geometry.hangar import Hangar
+from algorithms.base_solver import WarehouseTSPSolver
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches 
 #from graph.graph_collect_depot import GraphCollectWithDepot
 
 
-class OptParcours:
+class OptParcoursSolver(WarehouseTSPSolver):
     """
     Algorithme d'optimisation du parcours de collecte
     """
 
-    def __init__(self,hangar,commande:List[Tuple[str,int]]):
+    def __init__(self,hangar=None, points_complets=None):
+        name= "OptParcours Solver"
+        super().__init__(name)
         self.hangar = hangar
-        self.commande = commande
+        self.points_complets = points_complets
+        self.NIVEAUX = hangar.niveaux
         #placer la commande dans le hangar
-        self.hangar.placer_commande(commande)
-        self.groupes_by_allee = self.grouper_by_allee()
+        #self.hangar.placer_commande(commande)
+        self.groupes_by_allee = self._grouper_by_allee()
+        self.graphe_partitons = self.construire_graphe_partitions()
+        self.matrice_distances, self.noeuds, self.points_acces = self._matrice_distances_partitions()
         self.afficher_partitions()
+    #end if
+
+    def solve(self, distance_matrix: np.ndarray, depot_idx:int =0, arrival_idx: Optional[int] = None) -> Dict:
+        """ Implémentation du solver
+        """
+        start_time = time.time()
+        if arrival_idx is None:
+            arrival_idx = depot_idx
+        
+        #Si pas de partitions, solution triviale
+        if not self.noeuds:
+            tour = [depot_idx,arrival_idx]
+            distance = distance_matrix[depot_idx, arrival_idx] if distance_matrix[depot_idx,arrival_idx] < float('inf') else 0
+            return self._creer_resultat(tour,distance,start_time,optimal = False)
+        
+        #déterminer le départ et l'arrivée à partir des indices
+        depart = self._point_from_index(depot_idx)
+        arrivee = self._point_from_index(arrival_idx)
+        
+        if depart is None or arrivee is None:
+            return self._solution_erreur("indices départ/arrivée invalides")
+        #application de l'algorithme
+        resultat = self._parcours_glouton(depart,arrivee)
+        if not resultat['success']:
+            return self._solution_erreur(resultat['message'])
+        #convertir le résultat au format standard
+        tour = self._convertir_en_tour(resultat,depot_idx,arrival_idx)
+        if not self.validate_solution(tour,distance_matrix,depot_idx,arrival_idx):
+            return self._solution_erreur("Solution invalide")
+        
+        distance = self.calculate_tour_distance(tour,distance_matrix)
+        return self._creer_resultat(tour,distance,start_time,optimal=False)
+    #end solve
+
+    # ====================== Méthodes d'interface ===============
+    def _parcours_glouton(self,depart,arrivee):
+        """ Algorithmes """
+        if self.graphe_partitons is None:
+            return {'sucess':False,'message':"Graphe non initialisé"}
+        
+        matrice,noeuds,points_acces = self._matrice_distances_partitions()
+        n_partitions = len(noeuds)
+
+        #Etat initial
+        position = depart
+        visitees = []
+        non_visitees = list(range(n_partitions))
+        distance_totale = 0
+        ordre_points = [] #c'est ce que je veux moi depuis tout ce temps bordel
+
+        while non_visitees:
+            #chercher la partition la plus proche accessible
+            meilleur_idx = None
+            meilleure_dist = float('inf')
+
+            for idx in non_visitees:
+                entree = points_acces[idx]['entree'][1]
+                dist = self._distance_contrainte(position,entree)
+
+                if dist < meilleure_dist:
+                    meilleure_dist = dist
+                    meilleur_idx = idx
+            if meilleur_idx is None:
+                break
+
+            #visiter cette partition
+            visitees.append(meilleur_idx)
+            non_visitees.remove(meilleur_idx)
+
+            noeud = noeuds[meilleur_idx]
+            acces = points_acces[meilleur_idx]
+
+            #Mis à jour de la distance
+            distance_totale += meilleure_dist + acces['distance_interne']
+            position = acces['sortie'][1]
+
+            #ajouter points (déjà triés)
+            ordre_points.extend(noeud['points'])
+        #aller à l'arrivée
+        if visitees:
+            dist_arrivee = self._distance_contrainte(position,arrivee)
+            if dist_arrivee < float('inf'):
+                distance_totale += dist_arrivee
+        #preparer le resultat
+        ordre_partitions = [noeuds[i]['id'] for i in visitees]
+        points_ids = [self._point_to_index(p) for p in ordre_points]
+
+        return {
+            'success': True,
+            'message': "Parcours trouvé",
+            'ordre_partitions':ordre_partitions,
+            'ordre_points':ordre_points,
+            'points_ids': points_ids,
+            'distance': distance_totale,
+            'complet': len(visitees) == n_partitions,
+            'n_visitees': len(visitees),
+            'n_total': n_partitions
+        }
+    #end _parcous_glouton
+
+    def _convertir_en_tour(self,resultat,depot_idx,arrival_idx):
+        """Convertir le resultat interne en tour standard """
+        tour = [depot_idx]
+
+        #ajouter tous les points dans l'ordre
+        for point in resultat['ordre_points']:
+            point_idx = self._point_to_index(point)
+            if point_idx is not None and point_idx not in tour:
+                tour.append(point_idx)
+        #ajouter l'arrivée si pas déja presente
+        if arrival_idx not in tour:
+            tour.append(arrival_idx)
+        return tour
+    #end _convertir_en_tour
+    
+    def _point_from_index(self,idx):
+        """ convertir un index en coordonnée (x,y)"""
+        if 0 <= idx < len(self.points_complets):
+            point = self.points_complets[idx]
+
+            if point == self.hangar.depot_label:
+                return self.hangar.depot_position
+            elif point == self.hangar.arrival_label:
+                return self.hangar.arrival_position
+            elif point in self.hangar.points:
+                return self.hangar.points[point]
+        print(f" _point_from_index: idx={idx} non trouvé dans points_complets")
+        return (0, 0)
+    
+    def _point_to_index(self,point):
+        """ convertir un point en index"""
+        if point in self.points_complets:
+            return self.points_complets.index(point)
+        return None
+    
+    #================ QUELQUES METHODES UTILITAIRES=======
+    def _solution_erreur(self,message):
+        """ créer une reponse d'erreur standarisée """
+        return {
+            'tour':[],
+            'distance':float('inf'),
+            'time': 0,
+            'optimal':False,
+            'solver': self.name,
+            'error':True,
+            'message': message
+        }
+    #end _solution_erreur
+
+    def _creer_resultat(self,tour,distance,start_time,optimal):
+        """ standarisé le resultat """
+        return {
+            'tour':tour,
+            'distance':distance,
+            'time': time.time() - start_time,
+            'optimal': optimal,
+            'solver':self.name,
+            'error': False,
+            'message':"succès"
+        }
+    
+
+
 
 
     #Construction de l'algorithme d'optimisation du parcours lors de la collecte
     ##ETAPE 1:
     #    - grouper les n points de chaque allées
     #    - ordonner les groupes  de maniere alternées montée,descente . et en combien de facons
-    def grouper_by_allee(self):
+    def _grouper_by_allee(self):
         """ Groupe les points de la commande par allée """
-        if not self.commande:
+        if not self.points_complets:
             print("commande vide")
             return {}
         
         groupes = {}
-        for allee,position in self.commande:
+        for allee,position in self.points_complets:
             if allee not in groupes:
                 groupes[allee]= [] # si l'allée n'est pas encore dans le groupe on la crée
             groupes[allee].append((allee,position))
@@ -151,7 +322,7 @@ class OptParcours:
     #    - Partitionner une allée en 2 niveau: niveau haut et bas. 
     #    - organiniser les points dans chaque partie du niveau
     #    - définir combien des points dans chaque partie.
-    def analyser_parties_allee(self,allee:str)-> Dict:
+    def _analyser_parties_allee(self,allee:str)-> Dict:
         """
         Analyse dans quelle(s) partie(s) se trouvent les points d'une allée
 
@@ -222,7 +393,7 @@ class OptParcours:
         print("="*60)
 
         for allee in self.groupes_by_allee.keys():
-            analyse = self.analyser_parties_allee(allee)
+            analyse = self._analyser_parties_allee(allee)
             print(f"\nAllée {allee} ({analyse['sens']}):")
             print(f" Total points: {analyse['total_points']}")
 
@@ -246,7 +417,7 @@ class OptParcours:
         """
         noeuds = []
         for allee in self.groupes_by_allee.keys():
-            analyse = self.analyser_parties_allee(allee)
+            analyse = self._analyser_parties_allee(allee)
 
             #créer un noeud pour la partie basse si elle existe
             if analyse['a_partie_basse']:
@@ -350,10 +521,11 @@ class OptParcours:
 
     ## ETAPE 4:
     #    - definir les points d'entrée et de sortie d'une partition
+    #    - calcule de la distance interne de chaque partitions (calcul pouvant se faire une fois)
     #    - trouver un ordre de parcours de ces partitions en minimisant la distance .
     #    - deployer les élements de chaque partition equivaut à l'ordre du parcours de tous les points. 
 
-    def points_acces_partition(self,noeud:Dict):
+    def _points_acces_partition(self,noeud:Dict):
         """
         Définir les points d'entée et de sortie d'une partition
         Règles: 
@@ -397,10 +569,10 @@ class OptParcours:
         return{
             'entree':entree,
             'sortie':sortie,
-            'distance_interne': self.calculer_distance_interne(entree[1],sortie[1],noeud)
+            'distance_interne': self._calculer_distance_interne(entree[1],sortie[1],noeud)
         }
     
-    def calculer_distance_interne(self, point_entree:Tuple[float,float],point_sortie:Tuple[float,float],noeud:Dict) -> float:
+    def _calculer_distance_interne(self, point_entree:Tuple[float,float],point_sortie:Tuple[float,float],noeud:Dict) -> float:
         """
         Calcule la distance pour traverser la partition
         (distance d'entrée à sortie selon le sens)
@@ -424,21 +596,22 @@ class OptParcours:
 
         return distance
     
-    def matrice_distances_partitions(self,graphe=None):
+    def _matrice_distances_partitions(self):
         """
         Calcule la matrice des distances entre toutes les partitions
         returns:
             tuple:(matrice,liste_noeuds,points_acces)
 
         """
-        if graphe is None:
-            graphe = self.construire_graphe_partitions()
-        noeuds = graphe['noeuds']
+        if self.graphe_partitons is None:
+            return None
+        
+        noeuds = self.graphe_partitons['noeuds']
         n = len(noeuds)
         #definir les points d'accès pour chaque partition
         points_acces = []
         for noeud in noeuds:
-            acces = self.points_acces_partition(noeud)
+            acces = self._points_acces_partition(noeud)
             points_acces.append(acces)
         #initialiser la matrice
         matrice = np.full((n,n), float('inf'))
@@ -461,7 +634,7 @@ class OptParcours:
                     #Créer des points factices
                     id_sortie_i = (allee_i,-10-i)
                     id_entree_j = (allee_j,-20-j)
-                    
+
 
                     self.hangar.points[id_sortie_i] = point_sortie_i
                     self.hangar.points[id_entree_j] = point_entree_j
@@ -476,6 +649,7 @@ class OptParcours:
                     #distance totale
                     matrice[i][j] = dist_externe + points_acces[j]['distance_interne']
         return matrice, noeuds, points_acces
+    
     def tester_matrice_distances(self, graphe=None):
         """
         Test complet de la matrice des distances
@@ -532,6 +706,128 @@ class OptParcours:
                 print(f"  Partition {noeuds[i]['id']}: accessible à toutes les autres partitions")
         
         return matrice, noeuds, points_acces
+
+        ## ETAPE 4: ALGORITHME GLOUTON
+    
+    def parcours_glouton(self, depart, arrivee, graphe=None):
+        """
+        Algorithme glouton : toujours choisir la partition accessible la plus proche
+        Complexité: O(n²) où n = nombre de partitions
+        """
+        if graphe is None:
+            graphe = self.construire_graphe_partitions()
+        
+        matrice, noeuds, points_acces = self.matrice_distances_partitions(graphe)
+        n_partitions = len(noeuds)
+        
+        print(f"\n{'='*60}")
+        print("ALGORITHME GLOUTON")
+        print(f"{'='*60}")
+        print(f"Partitions: {n_partitions}")
+        print(f"Départ: {depart}")
+        print(f"Arrivée: {arrivee}")
+        
+        # État initial
+        position = depart
+        visitees = []
+        non_visitees = list(range(n_partitions))
+        distance_totale = 0
+        ordre_points = []
+        
+        étape = 1
+        while non_visitees:
+            # Chercher partition la plus proche accessible
+            meilleur_idx = None
+            meilleure_dist = float('inf')
+            
+            for idx in non_visitees:
+                entree = points_acces[idx]['entree'][1]
+                dist = self._distance_contrainte(position, entree)
+                
+                if dist < meilleure_dist:
+                    meilleure_dist = dist
+                    meilleur_idx = idx
+            
+            if meilleur_idx is None:
+                print(f"  Étape {étape}: BLOQUÉ - aucune partition accessible")
+                break
+            
+            # Visiter cette partition
+            visitees.append(meilleur_idx)
+            non_visitees.remove(meilleur_idx)
+            
+            noeud = noeuds[meilleur_idx]
+            acces = points_acces[meilleur_idx]
+            
+            # Mettre à jour distances
+            distance_totale += meilleure_dist + acces['distance_interne']
+            position = acces['sortie'][1]
+            
+            # Ajouter points (déjà triés)
+            ordre_points.extend(noeud['points'])
+            
+            print(f"  Étape {étape}: {noeud['id']} ({noeud['sens']})")
+            print(f"    Distance: {meilleure_dist:.1f}m + interne {acces['distance_interne']:.1f}m")
+            print(f"    Points: {len(noeud['points'])}")
+            
+            étape += 1
+        
+        # Aller à l'arrivée
+        if visitees:
+            dist_arrivee = self._distance_contrainte(position, arrivee)
+            if dist_arrivee < float('inf'):
+                distance_totale += dist_arrivee
+                print(f"\n  Arrivée: {dist_arrivee:.1f}m")
+            else:
+                print(f"\n  ❌ Arrivée inaccessible")
+        
+        # Résultat
+        print(f"\n{'='*60}")
+        print("RÉSULTAT")
+        print(f"{'='*60}")
+        
+        if len(visitees) == n_partitions:
+            print("✅ TOUTES les partitions visitées")
+        else:
+            print(f"⚠️  {len(visitees)}/{n_partitions} partitions visitées")
+        
+        print(f"Distance totale: {distance_totale:.1f}m")
+        
+        # Ordre des partitions
+        ordre_ids = [noeuds[i]['id'] for i in visitees]
+        print(f"Ordre: {' → '.join(ordre_ids)}")
+        
+        # Ordre des points
+        points_str = [f"{p[0]}{p[1]}" for p in ordre_points]
+        print(f"Points ({len(points_str)}): {' → '.join(points_str)}")
+        
+        return {
+            'ordre_partitions': ordre_ids,
+            'ordre_points': ordre_points,
+            'distance': distance_totale,
+            'complet': len(visitees) == n_partitions
+        }
+    
+    def _distance_contrainte(self, point1, point2):
+        """
+        Distance entre 2 points avec contraintes du hangar
+        Retourne float('inf') si impossible
+        """
+        # Créer des IDs temporaires
+        id1 = ("TEMP_DIST_1", 0)
+        id2 = ("TEMP_DIST_2", 0)
+        
+        self.hangar.points[id1] = point1
+        self.hangar.points[id2] = point2
+        
+        dist = self.hangar.distance(id1, id2)
+        
+        # Nettoyer
+        del self.hangar.points[id1]
+        del self.hangar.points[id2]
+        
+        return dist
+    
 
 def visualiser_graphe_partitions(self, graphe=None):
     """
@@ -654,6 +950,21 @@ if __name__ == "__main__":
 
     print("\n ETAPE 4 - MATRICE DES DISTANCES")
     matrice, noeuds, points_acces = opt.tester_matrice_distances(graphe_partitions)
+
+    # Test algorithme glouton
+    print("\n" + "="*60)
+    print("TEST algorithme glouton")
+    print("="*60)
+
+    #depart et arrivée 
+    depart_test = (20,-10)
+    arrivee_test = (20,25)
+    parcours = opt.parcours_glouton(depart_test,arrivee_test,graphe_partitions)
+
+    if parcours['complet']:
+        print("\n Parcours complet trouvé")
+    else:
+        print("\n Parcours incomplet")
 
     
 
