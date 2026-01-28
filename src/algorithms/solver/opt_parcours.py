@@ -78,98 +78,9 @@ class OptParcoursSolver(WarehouseTSPSolver):
         distance = self.calculate_tour_distance(tour, distance_matrix)
         
         return self._creer_resultat(tour, distance, start_time, optimal=False)
-        
-        """#Si pas de partitions, solution triviale
-        if not self.noeuds:
-            tour = [depot_idx,arrival_idx]
-            distance = distance_matrix[depot_idx, arrival_idx] if distance_matrix[depot_idx,arrival_idx] < float('inf') else 0
-            return self._creer_resultat(tour,distance,start_time,optimal = False)
-        
-        #déterminer le départ et l'arrivée à partir des indices
-        depart = self._point_from_index(depot_idx)
-        arrivee = self._point_from_index(arrival_idx)
-        
-        if depart is None or arrivee is None:
-            return self._solution_erreur("indices départ/arrivée invalides")
-        #application de l'algorithme
-        resultat = self._parcours_glouton(depart,arrivee)
-        if not resultat['success']:
-            return self._solution_erreur(resultat['message'])
-        #convertir le résultat au format standard
-        tour = self._convertir_en_tour(resultat,depot_idx,arrival_idx)
-        if not self.validate_solution(tour,distance_matrix,depot_idx,arrival_idx):
-            return self._solution_erreur("Solution invalide")
-        
-        distance = self.calculate_tour_distance(tour,distance_matrix)
-        return self._creer_resultat(tour,distance,start_time,optimal=False)
-        """
     #end solve
 
     # ====================== Méthodes d'interface ===============
-    def _parcours_glouton(self,depart,arrivee):
-        """ Algorithmes """
-        if self.graphe_partitons is None:
-            return {'sucess':False,'message':"Graphe non initialisé"}
-        
-        matrice,noeuds,points_acces = self._matrice_distances_partitions()
-        n_partitions = len(noeuds)
-
-        #Etat initial
-        position = depart
-        visitees = []
-        non_visitees = list(range(n_partitions))
-        distance_totale = 0
-        ordre_points = [] #c'est ce que je veux moi depuis tout ce temps bordel
-
-        while non_visitees:
-            #chercher la partition la plus proche accessible
-            meilleur_idx = None
-            meilleure_dist = float('inf')
-
-            for idx in non_visitees:
-                entree = points_acces[idx]['entree'][1]
-                dist = self._distance_contrainte(position,entree)
-
-                if dist < meilleure_dist:
-                    meilleure_dist = dist
-                    meilleur_idx = idx
-            if meilleur_idx is None:
-                break
-
-            #visiter cette partition
-            visitees.append(meilleur_idx)
-            non_visitees.remove(meilleur_idx)
-
-            noeud = noeuds[meilleur_idx]
-            acces = points_acces[meilleur_idx]
-
-            #Mis à jour de la distance
-            distance_totale += meilleure_dist + acces['distance_interne']
-            position = acces['sortie'][1]
-
-            #ajouter points (déjà triés)
-            ordre_points.extend(noeud['points'])
-        #aller à l'arrivée
-        if visitees:
-            dist_arrivee = self._distance_contrainte(position,arrivee)
-            if dist_arrivee < float('inf'):
-                distance_totale += dist_arrivee
-        #preparer le resultat
-        ordre_partitions = [noeuds[i]['id'] for i in visitees]
-        points_ids = [self._point_to_index(p) for p in ordre_points]
-
-        return {
-            'success': True,
-            'message': "Parcours trouvé",
-            'ordre_partitions':ordre_partitions,
-            'ordre_points':ordre_points,
-            'points_ids': points_ids,
-            'distance': distance_totale,
-            'complet': len(visitees) == n_partitions,
-            'n_visitees': len(visitees),
-            'n_total': n_partitions
-        }
-    #end _parcous_glouton
     def _parcours_glouton_ameliore(self, depart, arrivee):
         """Teste plusieurs options d'accès par partition"""
         if not self.noeuds:
@@ -463,8 +374,6 @@ class OptParcoursSolver(WarehouseTSPSolver):
                         break
         return ordre
     
-
-
     ##ETAPE 2:
     #    - Partitionner une allée en 2 niveau: niveau haut et bas. 
     #    - organiniser les points dans chaque partie du niveau

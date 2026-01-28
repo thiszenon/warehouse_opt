@@ -73,7 +73,7 @@ def test_avec_depot_fixe():
     print("-" * 50)
     
     solvers = [
-        #NearestNeighborSolver(start_at_nearest=True),
+        NearestNeighborSolver(start_at_nearest=True),
         #InsertionSolver(seed=42, insertion_strategy='cheapest'),
         #InsertionSolver(seed=42, insertion_strategy='farthest'),
         #TwoOptSolver(),
@@ -85,7 +85,7 @@ def test_avec_depot_fixe():
         #AlleyFirstSolver(hangar=hangar,points_complets=graphe.points_complets),
         #RobustAlleySolver(hangar=hangar,points_complets=graphe.points_complets,consolidation_enabled=True),
         #DynamicStructureSolver(hangar=hangar,points_complets=graphe.points_complets),
-        OptParcoursSolver(hangar=hangar,points_complets=graphe.points_complets)
+        #OptParcoursSolver(hangar=hangar,points_complets=graphe.points_complets)
 
 
     ]
