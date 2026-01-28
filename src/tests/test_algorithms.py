@@ -1025,12 +1025,12 @@ def main():
     print("=" * 70)
     
     # Test 1: Dépôt = Arrivée
-    solution1 = test_avec_depot_fixe()
+    #solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
     solution2 = test_avec_depot_arrivee_differents(algorithm_type='opt_parcours',display_plot=True)
     
-    # Analyse comparative
+    """# Analyse comparative
     print("\n" + "=" * 70)
     print("📊 COMPARAISON DES DEUX SCÉNARIOS")
     print("=" * 70)
@@ -1050,6 +1050,7 @@ def main():
     print("\n" + "=" * 70)
     print("✅ TEST D'INTÉGRATION TERMINÉ")
     print("=" * 70)
+    """
 
 if __name__ == "__main__":
     main()

@@ -199,7 +199,7 @@ class OptParcoursSolver(WarehouseTSPSolver):
                     dist = self._distance_contrainte(position, option['entree'][1])
                     
                     # Choisir la meilleure option accessible
-                    if dist < meilleure_distance and dist < float('inf'):
+                    if dist < meilleure_distance and dist != float('inf'):
                         meilleure_distance = dist
                         meilleur_idx = idx
                         meilleure_option = option
@@ -216,6 +216,10 @@ class OptParcoursSolver(WarehouseTSPSolver):
             distance_totale += meilleure_distance + meilleure_option['distance_interne']
             position = meilleure_option['sortie'][1]
             ordre_points.extend(noeud['points'])
+
+            #DEBUG----
+            print(f"  Test {noeud['id']}: {position} → {option['entree'][1]}")
+            print(f"    Distance réelle: {dist} {'(IMPOSSIBLE)' if dist == float('inf') else ''}")
         
         # Résultat
         return {
@@ -324,16 +328,38 @@ class OptParcoursSolver(WarehouseTSPSolver):
                 if allee in [depot_str, arrival_str]:
                     print(f"DEBUG: Exclu (point spécial)")
                     continue
-                if allee_str not in groupes:
-                    groupes[allee_str] = [] # si l'allée n'est pas encore dans le groupe on la crée
-                groupes[allee_str].append((allee_str,position))
+                #DEBUG
+                if allee in ['AB','BB']:
+                    allee_finale = 'B'
+                    print(f"DEBUG: {allee} transformé en B")
+                else:
+                    allee_finale = allee_str
+
+                if allee_finale not in groupes:
+                    groupes[allee_finale] = [] # si l'allée n'est pas encore dans le groupe on la crée
+                groupes[allee_finale].append((allee_str,position)) # on  garde le code original pour réference
             else:
                 print(f"DEBUG: Format de point inattendu: {point}")
         print(f"DEBUG: Groupes après filtrage: {list(groupes.keys())}")
 
         #trier les points dans chaque allée par leur positon y
         for allee in groupes:
-            groupes[allee].sort(key = lambda p: self.hangar.points[p][1])
+            #determoiner le sens de l'allée
+            if len(allee) == 2:
+                if allee in ['BB','DD','FF','HH']:
+                    base = allee[1]
+                else:
+                    base = allee[0]
+                #sens = self.hangar.sens.get(base,1)
+            else:
+                base = allee
+                #sens = self.hangar.sens.get(base,1)
+            sens = self.hangar.sens.get(base,1)
+            #Trier selon le sens
+            if sens ==1:
+                groupes[allee].sort(key = lambda p: self.hangar.points[p][1]) #croissant
+            else:
+                groupes[allee].sort(key = lambda p: self.hangar.points[p][1], reverse=True)
         return groupes
 
     def alterner_allee(self, groupes:Dict[str,List[Tuple[str,int]]], hangar: Hangar) -> List[str]:
@@ -459,6 +485,38 @@ class OptParcoursSolver(WarehouseTSPSolver):
         #recuperer les points de cette allée
         points = self.groupes_by_allee[allee]
 
+        # DEBUG
+        print(f"\nDEBUG _analyser_parties_allee pour '{allee}':")
+        print(f"  Total points: {len(points)}")
+        for p in points:
+            code, num = p
+            x,y = self.hangar.points[p]
+            print(f"    {code}{num}: y={y}")
+        
+        # Déterminer le sens
+        if len(allee) == 2:
+            if allee in ['BB','DD','FF','HH']:
+                base = allee[1]
+            else:
+                base = allee[0]
+        else:
+            base = allee        
+        
+        sens = self.hangar.sens.get(base,1)
+        
+        # CORRECTION IMPORTANTE : Trier TOUS les points d'abord selon le sens
+        if sens == 1:  # montée
+            points_tries = sorted(points, key=lambda p: self.hangar.points[p][1])  # croissant
+        else:  # descente
+            points_tries = sorted(points, key=lambda p: self.hangar.points[p][1], reverse=True)  # décroissant
+        
+        print(f"  Points triés (sens={'montée' if sens==1 else 'descente'}):")
+        for p in points_tries:
+            code, num = p
+            x,y = self.hangar.points[p]
+            print(f"    {code}{num}: y={y}")
+
+
         #determiner le milieu de l'allée
         milieu = self.hangar.Longueur/2
 
@@ -466,31 +524,13 @@ class OptParcoursSolver(WarehouseTSPSolver):
         partie_basse = []
         partie_haute = []
 
-        for point in points:
+        for point in points_tries:
             x,y = self.hangar.points[point]
             if y <= milieu:
                 partie_basse.append(point)
             else:
                 partie_haute.append(point)
-        #Trier selon le sens de l'allée
-        #déterminer le sens
-        if len(allee)==2:
-            if allee in ['BB','DD','FF','HH','AB']:
-                base = allee[1]
-            else:
-                base = allee[0]
-        else:
-            base = allee        
-        sens = self.hangar.sens.get(base,1)
 
-        #Pour une montée: du bas vers le haut
-        #Pour une descente: du haut vers le bas
-        if sens ==1: #cas 1 montée
-            partie_basse.sort(key=lambda p:self.hangar.points[p][1]) #croissant
-            partie_haute.sort(key=lambda p: self.hangar.points[p][1])
-        else:
-            partie_basse.sort(key=lambda p : self.hangar.points[p][1])
-            partie_haute.sort(key=lambda p : self.hangar.points[p][1])
         return {
             'allee':allee,
             'sens':'montée' if sens == 1 else 'descente',
@@ -992,12 +1032,14 @@ class OptParcoursSolver(WarehouseTSPSolver):
         del self.hangar.points[id2]
         
         # Si chemin impossible, ESTIMER au lieu de inf
-        if dist == float('inf'):
+        """
+            if dist == float('inf'):
             # Estimation euclidienne + pénalité
             dx = point2[0] - point1[0]
             dy = point2[1] - point1[1]
             estimé = np.sqrt(dx*dx + dy*dy) * 1.5  # Pénalité de 50%
             return estimé
+        """
         
         return dist
         

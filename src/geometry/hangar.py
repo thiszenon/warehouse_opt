@@ -93,7 +93,7 @@ class Hangar:
             is_special = True
             if allee in ['BB','DD','FF','HH','AB']:
                 #descentes spéciales (N3->N2)
-                allee_base = allee[1] # 'B' pour 'BB' et 'AB'
+                allee_base = allee[1] if allee != 'AB' else 'B'# 'B' pour 'BB' et 'AB'
                 zone= 'N3_N2'
             elif allee in ['CC','EE','GG']:
                 #Montantes spéciales (N2->N3)
@@ -136,7 +136,7 @@ class Hangar:
             if self.sens[allee_base] == 1:  # Montée
                 y = self.r * p - self.r / 2  # 1, 3, 5, ..., 99
             else:  # Descente
-                # CORRECTION : Commence en haut (99) et descend
+                # CORRECTION : Commence en haut (N3) et descend jusqu'en Bas (N0)
                 y = self.Longueur/2 - (self.r * p - self.r / 2)  # 99, 97, 95, ..., 1
         return x, y
 
@@ -295,10 +295,19 @@ class Hangar:
 #################### Calcul distances 
     def _accessible_verticalement(self, y_start, y_end, allee):
         """Cette methode verifie si le deplacement vertical respecte le sens de circulation"""
+        #Si l'allée est None , retourne True : le cas par défaut
+        if allee is None:
+            return True
+        
+        #si allee est deja une allée de base (1 caractere)
+        if len(allee) == 1:
+            allee_base = allee
+        elif len(allee) == 2:
         #Trouver l'allée de base
-        if len(allee) == 2:
-            if allee in ['BB','DD','FF','HH','AB']: #'AB' prendra 'B' puisque 'AB' est dans B est descente
-                allee_base = allee[1]
+            if allee in ['BB','DD','FF','HH','AB']: 
+                allee_base = allee[1] if allee != 'AB' else 'B' #'AB' prendra 'B' puisque 'AB' est dans B est descente
+            elif allee in ['CC','EE','GG']: # tu reviendra pour le cas de AA
+                allee_base = allee[0]
             else:
                 allee_base = allee[0]
         else:
@@ -308,7 +317,12 @@ class Hangar:
         if sens is None:
             return True
         
-        return (y_end - y_start)*sens >=0 
+        #Pour les allées de descente (B,D,F,H), permettre tout mouvement descendant
+        if sens == -1:
+            return y_end <= y_start #descente
+        
+        #return (y_end - y_start)*sens >=0 
+        return y_end >= y_start #Montée
     #end _accessible_verticalement
 
     def distance(self,p,q):
@@ -327,8 +341,24 @@ class Hangar:
         allee_q, _ = q
         distances = []
 
-        #cas 1: même allée
-        if allee_p == allee_q:
+
+        #cas 1: même allée ou allées speciales liées à la meme allée de base
+        def get_allee_base(code_allee):
+            if len(code_allee)==2:
+                if code_allee in ['BB','DD','FF','HH','AB']:
+                    return code_allee[1] if code_allee != 'AB' else 'B'
+                elif code_allee in ['CC','EE','GG']:
+                    return code_allee[0]
+                else:
+                    return code_allee
+        #end get_allee_base
+        allee_base_p = get_allee_base(allee_p)
+        allee_base_q = get_allee_base(allee_q)
+
+        #si meme allée de base , aller directement
+        
+        if allee_base_p == allee_base_q:
+            #pour la verification d'accessibilité, utilisation du code de l'allée de base
             if self._accessible_verticalement(y_p, y_q,allee_p):
                 distances.append(abs(y_q - y_p))
         #end if
@@ -426,7 +456,7 @@ if __name__ == "__main__":
     hangar = Hangar(Longueur=90, largeur_allee=5, r=2)
     
     print(f"=== CONSTRUCTION DU HANGAR ===")
-    print(f"Longueur: {hangar.Longueur} m")
+    """print(f"Longueur: {hangar.Longueur} m")
     print(f"Largeur par allée: {hangar.largeur_allee} m")
     print(f"Largeur totale: {hangar.largeur_totale} m")
     print(f"Espacement vertical: {hangar.r} m")
@@ -434,21 +464,12 @@ if __name__ == "__main__":
     print(f"Sens: {hangar.sens}")
     print(f"Centres: {hangar.centres}")
     print(f"Niveaux: {hangar.niveaux}")
+    """
     
     # 2. Générer quelques points pour la démonstration
     # (Au lieu de tous les points, juste quelques-uns pour la clarté)
-    points_demo = [
-        ('A', 1), ('A', 8),   # Paire 1 dans A (montée)
-        ('B', 47), ('D', 68), # Paire 50 dans A (haut)
-        ('H', 45), ('H', 24),   # Paire 1 dans H (descente, en haut)
-        ('C', 3), ('C', 19), # Point milieu dans C (montée)
-    ]
     commande = [
-        ('A',1),
-        ('A',8),
-        ('B',47),
-        ('C',3),
-        ('H',24)
+        ('AB', 7), ('BB', 11), ('B', 23)
     ]
     
     # 3. Placer ces points
@@ -459,12 +480,11 @@ if __name__ == "__main__":
     for (allee, n), (x, y) in sorted(hangar.points.items()):
         print(f"{allee}{n}: ({x:.1f}, {y:.1f}) m")
 
-    p = ('C',3)
-    q= ('A',1)
-    print("Distance A1 -> C3: ", hangar.distance(p,q))
-    print("Distance A1 -> C3: ", hangar.distance(q,p))
+    p = ('AB',7)
+    q= ('B',23)
+    print("Distance AB 7 -> B23 : ", hangar.distance(p,q))
+    print("Distance B23 -> AB 7: ", hangar.distance(q,p))
 
-    
     # 4. Visualiser
     fig, ax = hangar.dessiner("Hangar avec points de collecte (démonstration)")
     
@@ -481,4 +501,3 @@ if __name__ == "__main__":
     """
     plt.tight_layout()
     plt.show()
-    
