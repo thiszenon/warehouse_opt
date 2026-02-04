@@ -81,6 +81,7 @@ class OptParcoursSolver(WarehouseTSPSolver):
     #end solve
 
     # ====================== Méthodes d'interface ===============
+    #TODO: 
     def _parcours_glouton_ameliore(self, depart, arrivee):
         """Teste plusieurs options d'accès par partition"""
         if not self.noeuds:
@@ -138,22 +139,8 @@ class OptParcoursSolver(WarehouseTSPSolver):
             'ordre_points': ordre_points,
             'distance': distance_totale
         }
-
-    def _convertir_en_tour(self,resultat,depot_idx,arrival_idx):
-        """Convertir le resultat interne en tour standard """
-        tour = [depot_idx]
-
-        #ajouter tous les points dans l'ordre
-        for point in resultat['ordre_points']:
-            point_idx = self._point_to_index(point)
-            if point_idx is not None and point_idx not in tour:
-                tour.append(point_idx)
-        #ajouter l'arrivée si pas déja presente
-        if arrival_idx not in tour:
-            tour.append(arrival_idx)
-        return tour
-    #end _convertir_en_tour
     
+    #TODO:
     def _point_from_index(self,idx):
         """ convertir un index en coordonnée (x,y)"""
         if 0 <= idx < len(self.points_complets):
@@ -167,7 +154,7 @@ class OptParcoursSolver(WarehouseTSPSolver):
                 return self.hangar.points[point]
         print(f" _point_from_index: idx={idx} non trouvé dans points_complets")
         return (0, 0)
-    
+    #TODO:
     def _point_to_index(self,point):
         """ convertir un point en index"""
         try:
@@ -195,7 +182,7 @@ class OptParcoursSolver(WarehouseTSPSolver):
             'message': message
         }
     #end _solution_erreur
-
+    #TODO:
     def _creer_resultat(self,tour,distance,start_time,optimal):
         """ standarisé le resultat """
         return {
@@ -641,7 +628,7 @@ class OptParcoursSolver(WarehouseTSPSolver):
             'sortie':sortie,
             'distance_interne': self._calculer_distance_interne(entree[1],sortie[1],noeud)
         }
-    
+    #TODO:
     def _points_acces_realistes(self, noeud):
         """
         Points d'accès réalistes - au lieu de seulement (0, L/2, L)
@@ -826,105 +813,7 @@ class OptParcoursSolver(WarehouseTSPSolver):
 
         ## ETAPE 4: ALGORITHME GLOUTON
     
-    def parcours_glouton(self, depart, arrivee, graphe=None):
-        """
-        Algorithme glouton : toujours choisir la partition accessible la plus proche
-        Complexité: O(n²) où n = nombre de partitions
-        """
-        if graphe is None:
-            graphe = self.construire_graphe_partitions()
-        
-        matrice, noeuds, points_acces = self.matrice_distances_partitions(graphe)
-        n_partitions = len(noeuds)
-        
-        print(f"\n{'='*60}")
-        print("ALGORITHME GLOUTON")
-        print(f"{'='*60}")
-        print(f"Partitions: {n_partitions}")
-        print(f"Départ: {depart}")
-        print(f"Arrivée: {arrivee}")
-        
-        # État initial
-        position = depart
-        visitees = []
-        non_visitees = list(range(n_partitions))
-        distance_totale = 0
-        ordre_points = []
-        
-        étape = 1
-        while non_visitees:
-            # Chercher partition la plus proche accessible
-            meilleur_idx = None
-            meilleure_dist = float('inf')
-            
-            for idx in non_visitees:
-                entree = points_acces[idx]['entree'][1]
-                dist = self._distance_contrainte(position, entree)
-                
-                if dist < meilleure_dist:
-                    meilleure_dist = dist
-                    meilleur_idx = idx
-            
-            if meilleur_idx is None:
-                print(f"  Étape {étape}: BLOQUÉ - aucune partition accessible")
-                break
-            
-            # Visiter cette partition
-            visitees.append(meilleur_idx)
-            non_visitees.remove(meilleur_idx)
-            
-            noeud = noeuds[meilleur_idx]
-            acces = points_acces[meilleur_idx]
-            
-            # Mettre à jour distances
-            distance_totale += meilleure_dist + acces['distance_interne']
-            position = acces['sortie'][1]
-            
-            # Ajouter points (déjà triés)
-            ordre_points.extend(noeud['points'])
-            
-            print(f"  Étape {étape}: {noeud['id']} ({noeud['sens']})")
-            print(f"    Distance: {meilleure_dist:.1f}m + interne {acces['distance_interne']:.1f}m")
-            print(f"    Points: {len(noeud['points'])}")
-            
-            étape += 1
-        
-        # Aller à l'arrivée
-        if visitees:
-            dist_arrivee = self._distance_contrainte(position, arrivee)
-            if dist_arrivee < float('inf'):
-                distance_totale += dist_arrivee
-                print(f"\n  Arrivée: {dist_arrivee:.1f}m")
-            else:
-                print(f"\n  ❌ Arrivée inaccessible")
-        
-        # Résultat
-        print(f"\n{'='*60}")
-        print("RÉSULTAT")
-        print(f"{'='*60}")
-        
-        if len(visitees) == n_partitions:
-            print("✅ TOUTES les partitions visitées")
-        else:
-            print(f"⚠️  {len(visitees)}/{n_partitions} partitions visitées")
-        
-        print(f"Distance totale: {distance_totale:.1f}m")
-        
-        # Ordre des partitions
-        ordre_ids = [noeuds[i]['id'] for i in visitees]
-        print(f"Ordre: {' → '.join(ordre_ids)}")
-        
-        # Ordre des points
-        points_str = [f"{p[0]}{p[1]}" for p in ordre_points]
-        print(f"Points ({len(points_str)}): {' → '.join(points_str)}")
-        
-        return {
-            'ordre_partitions': ordre_ids,
-            'ordre_points': ordre_points,
-            'distance': distance_totale,
-            'complet': len(visitees) == n_partitions
-        }
-    
+    #TODO:
     def _distance_contrainte(self, point1, point2):
         """
         Distance avec estimation si chemin impossible
@@ -1013,12 +902,6 @@ def visualiser_graphe_partitions(self, graphe=None):
     plt.tight_layout()
     return fig, ax
     
-
-
-
-
-
-
 # Test
 if __name__ == "__main__":
     # Créer un hangar de test
