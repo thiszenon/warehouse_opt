@@ -64,7 +64,13 @@ class OptParcoursSolver(WarehouseTSPSolver):
             distance = self.calculate_tour_distance(tour,distance_matrix)
             return self._creer_resultat(tour,distance,start_time,optimal=False)
         
-        #2. FALLBACK: 
+        #2. FALLBACK1
+        print("⚠️  Échec glouton → Fallback ATSP simple")
+        fallback_result = self._fallback_atsp_simple(distance_matrix, depot_idx, arrival_idx)
+        if fallback_result:
+            return fallback_result
+        
+        #3. FALLBACK: 
         print("⚠️  Utilisation du fallback simple")
         n = distance_matrix.shape[0]
         tour = [depot_idx]
@@ -79,6 +85,52 @@ class OptParcoursSolver(WarehouseTSPSolver):
         
         return self._creer_resultat(tour, distance, start_time, optimal=False)
     #end solve
+    def _fallback_atsp_simple(self, distance_matrix,depot_idx, arrival_idx):
+        """Fallback intelligent : ATSP simple sur les points réels"""
+        n = distance_matrix.shape[0]
+        
+        # Algorithme du plus proche voisin adapté à l'asymétrie
+        visited = [False] * n
+        visited[depot_idx] = True
+        
+        tour = [depot_idx]
+        current = depot_idx
+        
+        while len(tour) < n:
+            # Trouver le point non visité le plus proche
+            next_idx = None
+            min_dist = float('inf')
+            
+            for j in range(n):
+                if not visited[j] and distance_matrix[current][j] < min_dist:
+                    min_dist = distance_matrix[current][j]
+                    next_idx = j
+            
+            if next_idx is None:
+                # Plus de point accessible
+                break
+            
+            tour.append(next_idx)
+            visited[next_idx] = True
+            current = next_idx
+        
+        # Ajouter l'arrivée
+        if arrival_idx != depot_idx and arrival_idx not in tour:
+            tour.append(arrival_idx)
+        
+        # Vérifier que tous les points sont visités
+        points_manquants = [i for i in range(n) if not visited[i] and i != arrival_idx]
+        if points_manquants:
+            print(f"Points non visités: {points_manquants}")
+            return None
+        
+        distance = self.calculate_tour_distance(tour, distance_matrix)
+        
+        return self._creer_resultat(
+            tour, distance, # À ajuster
+            optimal=False
+        )
+
 
     # ====================== Méthodes d'interface ===============
     #TODO: 
@@ -140,6 +192,189 @@ class OptParcoursSolver(WarehouseTSPSolver):
             'distance': distance_totale
         }
     
+    def _parcours_glouton_ameliore_2(self, depart, arrivee):
+        """Version améliorée avec backtracking limité"""
+        if not self.noeuds:
+            return {'success': False, 'message': "Aucune partition"}
+        
+        # Préparer toutes les options
+        toutes_options = []
+        for noeud in self.noeuds:
+            options = self._points_acces_realistes(noeud)
+            toutes_options.append(options)
+        
+        # ALGORITHME AMÉLIORÉ : essayer plusieurs points de départ
+        meilleur_resultat = None
+        meilleure_distance = float('inf')
+        
+        # Essayer chaque partition comme première (si petit nombre)
+        if len(self.noeuds) <= 10:
+            for first_idx in range(len(self.noeuds)):
+                resultat = self._parcours_glouton_from_first(
+                    depart, arrivee, first_idx, toutes_options
+                )
+                if resultat['success'] and resultat['distance'] < meilleure_distance:
+                    meilleure_distance = resultat['distance']
+                    meilleur_resultat = resultat
+        
+        # Si échec ou trop grand, utiliser la version simple
+        if meilleur_resultat is None:
+            meilleur_resultat = self._parcours_glouton_simple(
+                depart, arrivee, toutes_options
+            )
+        
+        return meilleur_resultat
+
+    def _parcours_glouton_simple(self, depart, arrivee, toutes_options):
+        """Version simple (votre original amélioré)"""
+        position = depart
+        visitees = []
+        ordre_points = []
+        distance_totale = 0
+        non_visitees = list(range(len(self.noeuds)))
+        
+        # Trier les partitions par accessibilité initiale
+        access_initiale = []
+        for idx in non_visitees:
+            best_dist = float('inf')
+            for option in toutes_options[idx]:
+                dist = self._distance_contrainte(position, option['entree'][1])
+                if dist < best_dist:
+                    best_dist = dist
+            access_initiale.append((idx, best_dist))
+        
+        # Trier par distance croissante
+        access_initiale.sort(key=lambda x: x[1])
+        non_visitees = [idx for idx, _ in access_initiale]
+        
+        # Parcours glouton
+        for idx in non_visitees:
+            # Trouver la meilleure option pour cette partition
+            meilleure_option = None
+            meilleure_distance = float('inf')
+            
+            for option in toutes_options[idx]:
+                dist = self._distance_contrainte(position, option['entree'][1])
+                if dist < meilleure_distance:
+                    meilleure_distance = dist
+                    meilleure_option = option
+            
+            if meilleure_option and meilleure_distance != float('inf'):
+                # Visiter cette partition
+                noeud = self.noeuds[idx]
+                distance_totale += meilleure_distance + meilleure_option['distance_interne']
+                position = meilleure_option['sortie'][1]
+                ordre_points.extend(noeud['points'])
+                visitees.append(idx)
+            else:
+                # Impossible d'atteindre cette partition
+                print(f"⚠️ Partition {self.noeuds[idx]['id']} inaccessible")
+        
+        return {
+            'success': len(visitees) == len(self.noeuds),
+            'ordre_points': ordre_points,
+            'distance': distance_totale
+        }
+    def _parcours_glouton_from_first(self, depart, arrivee, first_idx, toutes_options):
+        """
+        Parcours glouton en partant d'une partition spécifique comme première
+        
+        Args:
+            depart: point de départ (coordonnées)
+            arrivee: point d'arrivée (coordonnées)
+            first_idx: index de la partition à visiter en premier
+            toutes_options: liste des options d'accès pour chaque partition
+        
+        Returns:
+            Dictionnaire avec success, ordre_points, distance
+        """
+        if first_idx < 0 or first_idx >= len(self.noeuds):
+            return {'success': False, 'message': f"Index {first_idx} invalide"}
+        
+        position = depart
+        visitees = []
+        ordre_points = []
+        distance_totale = 0
+        
+        # Liste des partitions non visitées (sauf la première)
+        non_visitees = list(range(len(self.noeuds)))
+        non_visitees.remove(first_idx)  # Retirer la première
+        
+        # 1. VISITER LA PREMIÈRE PARTITION (forcée)
+        noeud_first = self.noeuds[first_idx]
+        
+        # Trouver la meilleure option pour cette première partition
+        meilleure_option_first = None
+        meilleure_distance_first = float('inf')
+        
+        for option in toutes_options[first_idx]:
+            dist = self._distance_contrainte(position, option['entree'][1])
+            if dist < meilleure_distance_first:
+                meilleure_distance_first = dist
+                meilleure_option_first = option
+        
+        if meilleure_option_first is None or meilleure_distance_first == float('inf'):
+            # Impossible d'atteindre même la première partition
+            return {'success': False, 'message': f"Partition {noeud_first['id']} inaccessible depuis le départ"}
+        
+        # Visiter cette première partition
+        distance_totale += meilleure_distance_first + meilleure_option_first['distance_interne']
+        position = meilleure_option_first['sortie'][1]
+        ordre_points.extend(noeud_first['points'])
+        visitees.append(first_idx)
+        
+        # 2. VISITER LES AUTRES PARTITIONS (glouton)
+        while non_visitees:
+            meilleur_idx = None
+            meilleure_option = None
+            meilleure_distance = float('inf')
+            
+            # Chercher la partition la plus proche
+            for idx in non_visitees:
+                for option in toutes_options[idx]:
+                    dist = self._distance_contrainte(position, option['entree'][1])
+                    if dist < meilleure_distance:
+                        meilleure_distance = dist
+                        meilleur_idx = idx
+                        meilleure_option = option
+            
+            if meilleur_idx is None or meilleure_distance == float('inf'):
+                # Plus aucune partition accessible
+                print(f"  ⚠️ Plus de partitions accessibles après {len(visitees)} visites")
+                break
+            
+            # Visiter cette partition
+            noeud = self.noeuds[meilleur_idx]
+            distance_totale += meilleure_distance + meilleure_option['distance_interne']
+            position = meilleure_option['sortie'][1]
+            ordre_points.extend(noeud['points'])
+            visitees.append(meilleur_idx)
+            non_visitees.remove(meilleur_idx)
+        
+        # 3. AJOUTER LA DISTANCE VERS L'ARRIVÉE
+        distance_arrivee = self._distance_contrainte(position, arrivee)
+        if distance_arrivee != float('inf'):
+            distance_totale += distance_arrivee
+        else:
+            # Estimation si chemin impossible
+            dx = arrivee[0] - position[0]
+            dy = arrivee[1] - position[1]
+            distance_arrivee = np.sqrt(dx*dx + dy*dy) * 1.5
+            distance_totale += distance_arrivee
+            print(f"  ⚠️ Chemin vers arrivée impossible, estimation: {distance_arrivee:.1f}")
+        
+        # 4. RETOURNER LE RÉSULTAT
+        succes_complet = len(visitees) == len(self.noeuds)
+        
+        return {
+            'success': succes_complet,
+            'message': f"Visited {len(visitees)}/{len(self.noeuds)} partitions" if not succes_complet else "Toutes partitions visitées",
+            'ordre_points': ordre_points,
+            'distance': distance_totale,
+            'premiere_partition': noeud_first['id'],
+            'partitions_visitees': visitees
+        }
+
     #TODO:
     def _point_from_index(self,idx):
         """ convertir un index en coordonnée (x,y)"""
@@ -604,30 +839,47 @@ class OptParcoursSolver(WarehouseTSPSolver):
         x_centre = self.hangar.centres.get(allee_base)
         if x_centre is None:
             x_centre = self.hangar.centres.get(allee[0],0)
-        L=self.hangar.Longueur
-        L2 = L/2
-
         
-        if noeud['type'] == 'basse': # à verifier 
-            #partie basse : entrée par N1(0), sortie par N2(L/2)
-            if sens == 1:
-                entree = ('ENTREE',(x_centre,0))
-                sortie = ('SORTIE',(x_centre, L2))
+        #RECUPERER LES POINTS REELS DE LA PARTITION
+        points = noeud['points']
+
+        if not points:
+            #Fallback si les partitions sont vides(ne devrait pas arriver)
+            if noeud['type'] == 'basse':
+                if sens == 1:
+                    entree = ('ENTREE_FALLBACK',(x_centre,1))
+                    sortie = ('SORTIE_FALLBACK',(x_centre, self.hangar.Longueur/2))
+                else:
+                    entree = ('ENTREE_FALLBACK', (x_centre,self.hangar.Longueur/2))
+                    sortie = ('SORTIE_FALLBACK',(x_centre,1))
             else:
-                entree = ('ENTREE',(x_centre,L2))
-                sortie = ('SORTIE',(x_centre, 0))
-        else: #partie HAUTE
+                if sens == 1:
+                    entree = ('ENTREE_FALLBACK',(x_centre,self.hangar.Longueur/2))
+                    sortie = ('SORTIE_FALLBACK',(x_centre,self.hangar.Longueur))
+
+                else:
+                    entree = ('ENTREE_FALLBACK',(x_centre,self.hangar.Longueur))
+                    sortie = ('SORTIE_FALLBACK',(x_centre,self.hangar.Longueur/2))
+        else:
+            #Points Réels. premier et dernier selon le sens
             if sens == 1:
-                entree = ('ENTREE',(x_centre,L2))
-                sortie = ('SORTIE',(x_centre,L))
+                premier_point = points[0]
+                dernier_point = points[-1]
             else:
-                entree = ('ENTREE',(x_centre,L))
-                sortie = ('SORTIE',(x_centre,L2))
-        return{
+                premier_point = points[-1]
+                dernier_point = points[0]
+            
+            coord_premier = self.hangar.points[premier_point]
+            coord_dernier = self.hangar.points[dernier_point]
+
+            entree = ('ENTREE_REEL',coord_premier)
+            sortie = ('SORTIE_REEL',coord_dernier)
+        return {
             'entree':entree,
             'sortie':sortie,
-            'distance_interne': self._calculer_distance_interne(entree[1],sortie[1],noeud)
+            'distance_interne': self._calculer_distance_interne(entree[1], sortie[1], noeud)
         }
+    
     #TODO:
     def _points_acces_realistes(self, noeud):
         """
@@ -830,16 +1082,45 @@ class OptParcoursSolver(WarehouseTSPSolver):
         del self.hangar.points[id2]
         
         # Si chemin impossible, ESTIMER au lieu de inf
-        """
-            if dist == float('inf'):
+        
+        if dist == float('inf'):
             # Estimation euclidienne + pénalité
             dx = point2[0] - point1[0]
             dy = point2[1] - point1[1]
-            estimé = np.sqrt(dx*dx + dy*dy) * 1.5  # Pénalité de 50%
-            return estimé
-        """
+            distance_euclid = np.sqrt(dx*dx + dy*dy)
+            
+            #pénalité selon la configuration (voir le document)
+            #Si changement d'allée nécessaire: pénalité forte
+            allee1 = self._trouver_allee_plus_proche(point1)
+            allee2 = self._trouver_allee_plus_proche(point2)
+
+            if allee1 != allee2:
+                #changement d'allée : nécessite un niveau intermédiaire
+                penalite = 2.0 #100% de pénalité
+            else:
+                # meme allée mais sens incompatible
+                penalite = 1.5 # 50% de pénalité
+            estimer = distance_euclid * penalite
+
+            #DEBUG
+            print(f" Estimation: {distance_euclid:.1f} x {penalite} = {estimer:.1f}")
+
+            return estimer
         
         return dist
+    def _trouver_allee_plus_proche(self,point):
+        """Trouver l'allée la plus proche d'un point """
+        x,y = point
+        allee_proche = None
+        dist_min = float('inf')
+
+        for allee, x_centre in self.hangar.centres.items():
+            distance_laterale = abs(x - x_centre)
+            if distance_laterale < dist_min:
+                dist_min = distance_laterale
+                allee_proche = allee
+        return allee_proche
+    
         
 
 def visualiser_graphe_partitions(self, graphe=None):
