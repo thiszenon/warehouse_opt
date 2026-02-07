@@ -3,7 +3,10 @@ from typing import List,Tuple,Dict,Optional
 import numpy as np
 import heapq 
 import time
-#inclure les chemins general si erreur
+import sys
+import os
+sys.path.append(os.path.join((os.path.dirname(__file__),'..','..')))
+
 from algorithms.base_solver import WarehouseTSPSolver
 
 class OptimalDirectionalSolver(WarehouseTSPSolver):
