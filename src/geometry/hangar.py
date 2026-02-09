@@ -19,7 +19,7 @@ class Hangar:
 
         #Allées de gauche à droite
         self.allees = ['H','G','F','E','D','C','B','A']
-        self.allees_speciales = ['BB','CC','DD','EE','FF','GG','HH','AA']
+        self.allees_speciales = ['BB','CC','DD','EE','FF','GG','HH','AB']
         self.allees_toutes = self.allees + self.allees_speciales
 
         #sens de circulation (-1: descente, +1: montée)
@@ -300,18 +300,7 @@ class Hangar:
             return True
         
         #si allee est deja une allée de base (1 caractere)
-        if len(allee) == 1:
-            allee_base = allee
-        elif len(allee) == 2:
-        #Trouver l'allée de base
-            if allee in ['BB','DD','FF','HH','AB']: 
-                allee_base = allee[1] if allee != 'AB' else 'B' #'AB' prendra 'B' puisque 'AB' est dans B est descente
-            elif allee in ['CC','EE','GG']: # tu reviendra pour le cas de AA
-                allee_base = allee[0]
-            else:
-                allee_base = allee[0]
-        else:
-            allee_base = allee
+        allee_base = self.get_allee_base(allee)
 
         sens = self.sens.get(allee_base)
         if sens is None:
@@ -324,6 +313,16 @@ class Hangar:
         #return (y_end - y_start)*sens >=0 
         return y_end >= y_start #Montée
     #end _accessible_verticalement
+
+    def get_allee_base(self,code_allee):
+            if len(code_allee)==2:
+                if code_allee in ['BB','DD','FF','HH','AB']:
+                    return code_allee[1] if code_allee != 'AB' else 'B'
+                elif code_allee in ['CC','EE','GG']:
+                    return code_allee[0]
+                else:
+                    return code_allee
+        #end get_allee_base
 
     def distance(self,p,q):
         """
@@ -343,17 +342,9 @@ class Hangar:
 
 
         #cas 1: même allée ou allées speciales liées à la meme allée de base
-        def get_allee_base(code_allee):
-            if len(code_allee)==2:
-                if code_allee in ['BB','DD','FF','HH','AB']:
-                    return code_allee[1] if code_allee != 'AB' else 'B'
-                elif code_allee in ['CC','EE','GG']:
-                    return code_allee[0]
-                else:
-                    return code_allee
-        #end get_allee_base
-        allee_base_p = get_allee_base(allee_p)
-        allee_base_q = get_allee_base(allee_q)
+        
+        allee_base_p =self.get_allee_base(allee_p)
+        allee_base_q =self.get_allee_base(allee_q)
 
         #si meme allée de base , aller directement
         

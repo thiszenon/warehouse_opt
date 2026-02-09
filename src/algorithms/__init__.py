@@ -13,6 +13,7 @@ from .first_solver import AlleyFirstSolver
 from .robust_solver import RobustAlleySolver
 from .dynamic_solver import DynamicStructureSolver
 from .solver.opt_parcours import OptParcoursSolver
+from .solver.optimal_directional import OptimalDirectionalSolver
 
 __all__ = [
     'WarehouseTSPSolver',
@@ -27,7 +28,8 @@ __all__ = [
     'AlleyFirstSolver',
     'RobustAlleySolver',
     'DynamicStructureSolver',
-    'OptParcoursSolver'
+    'OptParcoursSolver',
+    'OptimalDirectionalSolver'
 
 ]
 

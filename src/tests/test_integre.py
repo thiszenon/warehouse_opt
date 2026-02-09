@@ -30,7 +30,7 @@ def main():
 
     # Visualiser un chemin spécifique
     print("visualisation d'un chemin spécifique...")
-    graphe.visualiser_chemin_sur_hangar(('B',3), ('A',1))
+    graphe.visualiser_chemin_sur_hangar(('B',10), ('BB',14))
 
     # visualiser tous les chemins sur le meme hangar
     print("\nVisualisation de tous les chemins...")
@@ -38,7 +38,7 @@ def main():
 
     #visualisation par paires
     print("\nVisualisation par paires...")
-    #graphe.visualiser_chemins_par_paires()
+    graphe.visualiser_chemins_par_paires()
 
     
     # 4. Afficher les infos

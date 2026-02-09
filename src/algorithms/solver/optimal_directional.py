@@ -5,8 +5,7 @@ import heapq
 import time
 import sys
 import os
-sys.path.append(os.path.join((os.path.dirname(__file__),'..','..')))
-
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from algorithms.base_solver import WarehouseTSPSolver
 
 class OptimalDirectionalSolver(WarehouseTSPSolver):
@@ -92,14 +91,13 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
 
     def _get_base_allee(self,allee_code:str) -> str:
         """Cette méthode retourne l'allée de base (A,B,C,...) d'un code d'allée"""
-        if len(allee_code)== 1:
-            return allee_code
-        elif allee_code in ['BB','DD','FF','HH','AB']:
-            return allee_code[1] if allee_code != 'AB' else 'B'
-        elif allee_code in ['CC', 'EE', 'GG']:
-            return allee_code[0]
-        else:
-            return allee_code[0]
+        if len(allee_code)==2:
+            if allee_code in ['BB','DD','FF','HH','AB']:
+                return allee_code[1] if allee_code != 'AB' else 'B'
+            elif allee_code in ['CC','EE','GG']:
+                return allee_code[0]
+            else:
+                return allee_code 
     #end _get_base_allee
 
     def _compute_fallback_dH(self,p,q,allee_p,allee_q, y_p,y_q,x_p,x_q):
@@ -175,11 +173,22 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
         #CHOIX DE L'ALGORITHME SELON LA TAILLE
 
         if n <=15:
+
             print(f"[Optimal] n={n} <= 15 -> Held-Karp")
             tour,distance, is_optimal = self._held_karp_astp(distance_matrix,depot_idx,arrival_idx)
+            #VERIFICATION:
+            if tour is None: #Held-Karp a échoué
+                print(" Help-Karp n'a pas trouvé de solution valide")
+                print(" -> Passage à l'heuristique")
+                tour,distance = self._nearest_neighbor_3opt(
+                    distance_matrix,depot_idx,arrival_idx
+                )
+                is_optimal = False
+            return self._creer_resultat(tour,distance,time.time() - start_time,is_optimal)
+        
         elif n <=30:
             print(f"[Qausi-optimal] 15 < n={n} <= 30 -> Lin-Kernighan heuristique")
-            tour,distance = self._lin_kernighan_astp(
+            tour,distance = self._lin_kernighan_atsp(
                 distance_matrix,depot_idx,arrival_idx
             )
             is_optimal = False
@@ -266,7 +275,12 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
 
         #Initialisation : depuit le départ
         for i , point in enumerate(nodes):
+            #VERIFIER SI L'ARC EST POSSIBLE
+            if dist_matrix[start][point] == float('inf'):
+                continue # Ne pas initialiser cet état
+
             dp[1<< i][i] = dist_matrix[start][point]
+
         #DP
         for mask in range(1 << size):
             for i in range(size):
@@ -278,6 +292,10 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
                     if mask & (1 << j):
                         continue
                     next_point = nodes[j]
+
+                    if dist_matrix[last_point][next_point] == float('inf'):
+                        continue #ARC IMPOSSIBLE -Ne pas le considérer
+
                     new_mask = mask | (1 << j)
                     new_dist = dp[mask][i] + dist_matrix[last_point][next_point]
 
@@ -301,12 +319,21 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
         mask = full_mask
         current_idx = best_last
 
-        while current_idx := -1:
+        while current_idx != -1:
             tour.append(nodes[current_idx])
             prev_idx = parent[mask][current_idx]
-            mask &=~(1 << current_idx)
+
+            if current_idx >=0:
+                mask &=~(1 << current_idx)
+
             current_idx = prev_idx
         tour.append(end)
+        #VERIFICATION DE LA RECONSTRUCTION
+        for i in range(len(tour)-1):
+            if dist_matrix[tour[i]][tour[i+1]] == float('inf'):
+                print(f" Tour invalide : arc {tour[i]}-> {tour[i+1]} impossible")
+                return None, float('inf'),False
+            
         return tour, best_dist,True
     #_held_karp_atsp_different_ends
 
@@ -414,34 +441,42 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
     def _nearest_neighbor_3opt(self,dist_matrix,start,end):
         """
         Nearest Neighbor + optimisation 3-opt
-        Complexité: O(n^3)
+        Complexité: O(n^2)
         """
-        n= dist_matrix.shape[0]
+        n = dist_matrix.shape[0]
+        points_to_visit = [i for i in range(n) if i not in [start,end]]
 
-        #1. Nearest Neighbor initial
-        visited = [False]*n
-        tour = [start]
-        current = start
-        visited[start] = True
-
-        while len(tour) < n - (0 if start == end else 1):
-            next_point = -1
-            min_dist = float('inf')
-            for i in range(n):
-                if not visited[i] and i != end:
-                    min_dist = dist_matrix[current][i]
-                    next_point=i
-            if next_point == -1:
-                break
-
-            tour.append(next_point)
-            visited[next_point]= True
-            current = next_point
-
-        if end not in tour:
-            tour.append(end)
+        if not points_to_visit:
+            return [start,end], dist_matrix[start][end]
         
-        #2. Optimisation 3-opt
+        #STRATEGIE: Mélange aléatoire (Ref: comme dans Insertion cheapest)
+        import random
+        random.shuffle(points_to_visit)
+
+        #Initialisation : start -> premier point -> end
+        tour =[start, points_to_visit[0],end]
+
+        #Cheapest insertion pour les autres points
+        for point in points_to_visit[1:]:
+            best_position = -1
+            best_cost_increase = float('inf')
+
+            for i in range(1,len(tour)):
+                prev, next_node = tour[i-1],tour[i]
+                current_cost = dist_matrix[prev][next_node]
+                new_cost = dist_matrix[prev][point] + dist_matrix[point][next_node]
+
+                if np.isinf(current_cost) or np.isinf(new_cost):
+                    continue
+
+                cost_increase = new_cost - current_cost
+                if cost_increase < best_cost_increase:
+                    best_cost_increase = cost_increase
+                    best_position = i
+            if best_position !=-1:
+                tour.insert(best_position,point)
+
+        # Optimisation 3-opt
         tour = self._three_opt(tour,dist_matrix)
         distance = self.calculate_tour_distance(tour,dist_matrix)
         return tour, distance
@@ -544,6 +579,13 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
             'error':True,
             'message':message
         }
+    
+
+if __name__ == "__main__":
+    print(f"BB14: allee_base={self._get_base_allee('BB')}, y={y_BB14}")
+    print(f"B10: allee_base={self._get_base_allee('B')}, y={y_B10}")
+    print(f"Sens B: {self.hangar.sens.get('B')}")
+    print(f"d_H(BB14, B10) = {self._compute_dH(BB14, B10)}")
 
 
 

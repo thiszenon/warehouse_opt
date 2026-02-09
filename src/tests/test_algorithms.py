@@ -29,6 +29,7 @@ from src.algorithms import (
     DynamicStructureSolver
 )
 from src.algorithms.solver.opt_parcours import OptParcoursSolver
+from src.algorithms.solver.optimal_directional import OptimalDirectionalSolver
 from src.data.commandes import get_commandes
 
 def test_avec_depot_fixe():
@@ -85,7 +86,8 @@ def test_avec_depot_fixe():
         #AlleyFirstSolver(hangar=hangar,points_complets=graphe.points_complets),
         #RobustAlleySolver(hangar=hangar,points_complets=graphe.points_complets,consolidation_enabled=True),
         #DynamicStructureSolver(hangar=hangar,points_complets=graphe.points_complets),
-        #OptParcoursSolver(hangar=hangar,points_complets=graphe.points_complets)
+        #OptParcoursSolver(hangar=hangar,points_complets=graphe.points_complets),
+        OptimalDirectionalSolver(hangar=hangar)
 
 
     ]
@@ -203,6 +205,48 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
     # 3. Créer le graphe
     print("\n🔧 Construction du graphe...")
     graphe = GraphCollectWithDepot(hangar, commande)
+
+    # Dans test_avec_depot_arrivee_differents(), APRÈS avoir créé graphe :
+
+    print("\n🔍 DEBUG MATRICE COMPLÈTE POUR OPTIMAL_DIR")
+
+    # Trouver les indices de BB14 et B10 dans la matrice
+    points = graphe.points_complets
+    for i, pt in enumerate(points):
+        if pt == ('BB', 14):
+            idx_BB14 = i
+        if pt == ('B', 10):
+            idx_B10 = i
+
+    print(f"Indices dans la matrice: BB14={idx_BB14}, B10={idx_B10}")
+
+    print(f"\nValeurs dans la matrice:")
+    print(f"  BB14→B10 = {graphe.matrice[idx_BB14][idx_B10]}")
+    print(f"  B10→BB14 = {graphe.matrice[idx_B10][idx_BB14]}")
+
+    print(f"\nTest direct avec hangar.distance_special():")
+    d1 = hangar.distance_special(('BB', 14), ('B', 10))
+    d2 = hangar.distance_special(('B', 10), ('BB', 14))
+    print(f"  distance_special(BB14, B10) = {d1}")
+    print(f"  distance_special(B10, BB14) = {d2}")
+
+    print(f"\nVérification de tous les arcs depuis/vers BB14:")
+    for j, pt in enumerate(points):
+        if j != idx_BB14:
+            dist = graphe.matrice[idx_BB14][j]
+            if dist == float('inf'):
+                print(f"  BB14 → {pt} = inf (PROBLÈME!)")
+            else:
+                print(f"  BB14 → {pt} = {dist:.1f}")
+
+    print(f"\nVérification de tous les arcs depuis/vers B10:")
+    for j, pt in enumerate(points):
+        if j != idx_B10:
+            dist = graphe.matrice[idx_B10][j]
+            if dist == float('inf'):
+                print(f"  B10 → {pt} = inf (PROBLÈME!)")
+            else:
+                print(f"  B10 → {pt} = {dist:.1f}")
     
     # 4. Vérifier que le point dépôt ≠ arrivée
     if hangar.depot_position == hangar.arrival_position:
@@ -303,6 +347,14 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
             points_complets=graphe.points_complets
         )
         print("- opt_parcours ")
+    elif algorithm_type =='optimal_dir':
+
+        solver = OptimalDirectionalSolver(hangar=hangar)
+        solution = solver.solve(
+            distance_matrix=graphe.matrice,
+            depot_idx=graphe.depot_idx,
+            arrival_idx=graphe.arrival_idx
+        )
 
         
 
@@ -1028,7 +1080,7 @@ def main():
     #solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='opt_parcours',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='optimal_dir',display_plot=True)
     
     """# Analyse comparative
     print("\n" + "=" * 70)
