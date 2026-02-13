@@ -89,25 +89,62 @@ class Hangar:
         is_special = False
         zone = None
 
-        if len(allee) == 2: #code à 2 lettres
+        if len(allee) == 2: #code à 2 lettres = spéciale
             is_special = True
             if allee in ['BB','DD','FF','HH','AB']:
                 #descentes spéciales (N3->N2)
                 allee_base = allee[1] if allee != 'AB' else 'B'# 'B' pour 'BB' et 'AB'
-                zone= 'N3_N2'
+                zone= 'N3_N2' #Descente Haute
             elif allee in ['CC','EE','GG']:
                 #Montantes spéciales (N2->N3)
                 allee_base = allee[0] # 'C' pour 'cc', etc
                 zone = 'N2_N3'
-            else:
-                raise ValueError(f"Code d'allée inconnu: {allee}")
+        else: #allée normale
+            if self.sens[allee] == 1: #Montée
+                zone = 'N1_N2' #montée basse
+            else: #Descente
+                zone = 'N2_N1' #descente basse
             
         #validation
         if allee_base not in self.allees:
             raise ValueError(f"Allée {allee} (base: {allee_base}) invalide")
         
         #2. Calcul de x
-        k = self.allees.index(allee_base)
+        k = self.allees.index(allee_base) + 1
+        x_centre =self.centres[allee_base] # TODO
+        if n%2 == 1: #Point impair -> ccoté droit
+            x = x_centre 
+        else:
+            x = x_centre 
+        
+        #3. Calcul de y selon la ZONE
+        p = (n+1)//2
+
+        if zone =='N1_N2': #Montée normale (A,C,E,G)
+            #y entre 0 et 50
+            y = self.r * p - self.r/2
+            y = min(y, self.Longueur/2)
+
+        elif zone == 'N2_N1': #descente normale (B,D,F,H)
+            # y entre 50 et 0 (inverse)
+            y = self.Longueur/2 - (self.r * p - self.r/2)
+            y = max(y,0)
+
+        elif zone == 'N2_N3': #montéé spéciale 
+            #y entre 50 et 100
+            y = self.Longueur/2 + (self.r*p - self.r/2)
+            y = min(y,self.Longueur)
+        
+        elif zone == 'N3_N2': #descente spéciale 
+            #y entre 100 et 50
+            y= self.Longueur - (self.r*p - self.r/2)
+            y = max(y,self.Longueur/2) # >= N2
+            y= min(y,self.Longueur) # <= N3
+        return x,y
+
+
+
+        """ 
         largeur_couloir = self.largeur_allee*0.8 
         marge = (self.largeur_allee - largeur_couloir)/2
         
@@ -138,7 +175,7 @@ class Hangar:
             else:  # Descente
                 # CORRECTION : Commence en haut (N3) et descend jusqu'en Bas (N0)
                 y = self.Longueur/2 - (self.r * p - self.r / 2)  # 99, 97, 95, ..., 1
-        return x, y
+        return x, y   """ 
 
     def _ajouter_point(self, allee, n):
         """Nouvelle version : utilise calculer_coordonnees."""
@@ -295,34 +332,38 @@ class Hangar:
 #################### Calcul distances 
     def _accessible_verticalement(self, y_start, y_end, allee):
         """Cette methode verifie si le deplacement vertical respecte le sens de circulation"""
-        #Si l'allée est None , retourne True : le cas par défaut
         if allee is None:
             return True
+    
+        # Déterminer la ZONE de l'allée
+        if len(allee) == 2:  # Allée spéciale
+            if allee in ['BB','DD','FF','HH','AB']:
+                zone = 'N3_N2'  # Descente HAUTE
+            else:  # ['CC','EE','GG']
+                zone = 'N2_N3'  # Montée HAUTE
+        else:  # Allée normale
+            if self.sens[allee] == 1:
+                zone = 'N1_N2'  # Montée BASSE
+            else:
+                zone = 'N2_N1'  # Descente BASSE
         
-        #si allee est deja une allée de base (1 caractere)
-        allee_base = self.get_allee_base(allee)
-
-        sens = self.sens.get(allee_base)
-        if sens is None:
-            return True
-        
-        #Pour les allées de descente (B,D,F,H), permettre tout mouvement descendant
-        if sens == -1:
-            return y_end <= y_start #descente
-        
-        #return (y_end - y_start)*sens >=0 
-        return y_end >= y_start #Montée
+        # Vérifier selon la zone
+        if zone in ['N1_N2', 'N2_N3']:  # Montées
+            return y_end > y_start  # Doit monter
+        elif zone in ['N2_N1', 'N3_N2']:  # Descentes
+            return y_end < y_start  # Doit descendre
     #end _accessible_verticalement
 
     def get_allee_base(self,code_allee):
-            if len(code_allee)==2:
-                if code_allee in ['BB','DD','FF','HH','AB']:
-                    return code_allee[1] if code_allee != 'AB' else 'B'
-                elif code_allee in ['CC','EE','GG']:
-                    return code_allee[0]
-                else:
-                    return code_allee
-        #end get_allee_base
+        if len(code_allee)==2:
+            if code_allee in ['BB','DD','FF','HH','AB']:
+                return code_allee[1] if code_allee != 'AB' else 'B'
+            elif code_allee in ['CC','EE','GG']:
+                return code_allee[0]
+            else:
+                return code_allee
+        return code_allee
+    #end get_allee_base
 
     def distance(self,p,q):
         """
@@ -330,6 +371,10 @@ class Hangar:
         respectant les contraintes du hangar
         :p,q : tuples(allee, n)
         """
+
+        print(f"\n=== DEBUG distance {p} -> {q}====")
+        print(f"Points: {p}={self.points[p]}, {q}={self.points[q]}")
+
         if p == q :
             return 0.0
         #coordonnées 
@@ -346,14 +391,54 @@ class Hangar:
         allee_base_p =self.get_allee_base(allee_p)
         allee_base_q =self.get_allee_base(allee_q)
 
+        print(f"Allées: {allee_p}, {allee_q}")
+        print(f"Bases: {allee_base_p}, {allee_base_q}")
+
         #si meme allée de base , aller directement
         
         if allee_base_p == allee_base_q:
             #pour la verification d'accessibilité, utilisation du code de l'allée de base
-            if self._accessible_verticalement(y_p, y_q,allee_p):
-                distances.append(abs(y_q - y_p))
+            
+            print(f"CAS 1: même base {allee_base_p}")
+            access = self._accessible_verticalement(y_p,y_q,allee_p)
+
+            print(f"  Accessible? {access}")
+            if access:
+                d = abs(y_q - y_p)
+                print(f"  Distance directe: {d}")
+                distances.append(d)
+            
+
+            #if self._accessible_verticalement(y_p, y_q,allee_p):
+            #   distances.append(abs(y_q - y_p))
+            #else:
+                #return float('inf') # Impossible selon le sens
         #end if
+
         #cas 2: passage par niveaux horizontaux
+        print(f"\nCAS 2: essayer niveaux")
+        for nom, y_n in self.niveaux.items():
+            acc1 = self._accessible_verticalement(y_p, y_n, allee_p)
+            acc2 = self._accessible_verticalement(y_n, y_q, allee_q)
+            print(f"  Niveau {nom} (y={y_n}):")
+            print(f"    {allee_p}→niveau: {acc1}")
+            print(f"    niveau→{allee_q}: {acc2}")
+            
+            if acc1 and acc2:
+                d_horiz = self.distance_centres_allees(allee_p,allee_q)
+
+                d = abs(y_n - y_p) + d_horiz + abs(y_q - y_n)
+                print(f"    Distance: {abs(y_n - y_p)} + {d_horiz} + {abs(y_q - y_n)} = {d}")
+                distances.append(d)
+        
+        print(f"\nDistances trouvées: {distances}")
+        if distances:
+            result = min(distances)
+            print(f"Résultat: {result}")
+        else:
+            print(f"Résultat: inf")
+        
+
         for y_n in self.niveaux.values():
             #p -> niveau
             if not self._accessible_verticalement(y_p,y_n,allee_p):
@@ -362,7 +447,7 @@ class Hangar:
             if not self._accessible_verticalement(y_n, y_q, allee_q):
                 continue
             d_vertical_1 = abs(y_n - y_p)
-            d_horizontal = abs(x_q - x_p)
+            d_horizontal = self.distance_centres_allees(allee_p,allee_q) # BUG: utilisation de la coordonnée du point plutot que du centre de l'allée
             d_vertical_2 = abs(y_q - y_n)
 
             distances.append(d_vertical_1 + d_horizontal + d_vertical_2)
@@ -371,6 +456,19 @@ class Hangar:
             return float('inf')
         return min(distances)
     #end distance
+
+
+    #TODO nouvelle méthode de calcul de la distance entre le cente des allées
+    def distance_centres_allees(self,allee1,allee2):
+        base1= self.get_allee_base(allee1)
+        base2 = self.get_allee_base(allee2)
+        if base1 == base2:
+            return 0.0 #meme allée
+        
+        centre1 = self.centres[base1]
+        centre2 = self.centres[base2]
+        return abs(centre2 - centre1) #5.0
+    #end distance_centres_allees
 
     def tracer_chemin(self, p,q,ax=None, couleur='green', style='-', alpha=0.7, linewidth=2):
         """
@@ -447,7 +545,7 @@ if __name__ == "__main__":
     hangar = Hangar(Longueur=90, largeur_allee=5, r=2)
     
     print(f"=== CONSTRUCTION DU HANGAR ===")
-    """print(f"Longueur: {hangar.Longueur} m")
+    print(f"Longueur: {hangar.Longueur} m")
     print(f"Largeur par allée: {hangar.largeur_allee} m")
     print(f"Largeur totale: {hangar.largeur_totale} m")
     print(f"Espacement vertical: {hangar.r} m")
@@ -455,26 +553,33 @@ if __name__ == "__main__":
     print(f"Sens: {hangar.sens}")
     print(f"Centres: {hangar.centres}")
     print(f"Niveaux: {hangar.niveaux}")
-    """
+
+
+    
     
     # 2. Générer quelques points pour la démonstration
     # (Au lieu de tous les points, juste quelques-uns pour la clarté)
     commande = [
-        ('AB', 7), ('BB', 11), ('B', 23)
+        ('C', 29), ('BB', 14), ('B', 10)
     ]
     
     # 3. Placer ces points
     hangar.placer_commande(commande)
+
+    #
     
     
     print(f"\n=== POINTS PLACÉS ===")
     for (allee, n), (x, y) in sorted(hangar.points.items()):
         print(f"{allee}{n}: ({x:.1f}, {y:.1f}) m")
 
-    p = ('AB',7)
-    q= ('B',23)
-    print("Distance AB 7 -> B23 : ", hangar.distance(p,q))
-    print("Distance B23 -> AB 7: ", hangar.distance(q,p))
+    p = ('BB',14)
+    q= ('B',10)
+    print("Distance BB14 -> B10 : ", hangar.distance(p,q))
+    print("Distance B10 -> BB14: ", hangar.distance(q,p))
+    print("Coordonnées du point C29=", hangar.calculer_coordonnees('BB',14))
+    print("Coordonnées du point B10=", hangar.calculer_coordonnees('B',10))
+
 
     # 4. Visualiser
     fig, ax = hangar.dessiner("Hangar avec points de collecte (démonstration)")
@@ -491,4 +596,4 @@ if __name__ == "__main__":
     ax.text(20, 75, "• Niveaux N1,N2,N3: couloirs horizontaux", color='orange', fontsize=10)
     """
     plt.tight_layout()
-    plt.show()
+    #plt.show()

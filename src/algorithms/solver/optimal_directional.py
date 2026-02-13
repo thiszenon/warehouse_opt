@@ -36,7 +36,7 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
         où J(p,q) = {j ∈ {1,2,3} | (y_j - y_p)·σ(α_p) > 0 et (y_q - y_j)·σ(α_q) > 0}
         
         Complexité : O(1) grâce à la formule explicite
-        """
+        
         #Récupérer les coordonnées
         if p not in self.hangar.points:
             self.hangar._ajouter_point(p[0],p[1])
@@ -86,7 +86,9 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
             #Aucun chemin possible via les niveaux standars
             #Essayer un chemin en deux étapes (passer par le niveau le plus proche)
             return self._compute_fallback_dH(p,q, allee_p,allee_q, y_p,y_q,x_p,x_q)
-        return min(distances)
+        return min(distances) 
+        """
+        return self.hangar.distance(p,q)
     #end _compute_dH
 
     def _get_base_allee(self,allee_code:str) -> str:
@@ -96,8 +98,8 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
                 return allee_code[1] if allee_code != 'AB' else 'B'
             elif allee_code in ['CC','EE','GG']:
                 return allee_code[0]
-            else:
-                return allee_code 
+            
+        return allee_code 
     #end _get_base_allee
 
     def _compute_fallback_dH(self,p,q,allee_p,allee_q, y_p,y_q,x_p,x_q):
@@ -183,6 +185,16 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
                 tour,distance = self._nearest_neighbor_3opt(
                     distance_matrix,depot_idx,arrival_idx
                 )
+
+                #SI Held-Karp échoue, essayer l'heuristique immédiatement
+                if tour is None:
+                    print("Held-Karp n'a pas trouvé de solution valide")
+                    print("-> Passage direct à l'heuristique cheapest insertion ")
+                    
+                    tour, distance = self._cheapest_insertion_3opt(
+                        distance_matrix, depot_idx,arrival_idx
+                    )
+
                 is_optimal = False
             return self._creer_resultat(tour,distance,time.time() - start_time,is_optimal)
         
@@ -281,7 +293,7 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
 
             dp[1<< i][i] = dist_matrix[start][point]
 
-        #DP
+        #DP avec vérification des arcs
         for mask in range(1 << size):
             for i in range(size):
                 if dp[mask][i] == float('inf'):
@@ -308,12 +320,24 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
         best_last = -1
 
         for i in range(size):
+            if dp[full_mask][i] == float('inf'):
+                continue
+
             last_point = nodes[i]
+            #Vérifier l'arc vers l'arrivée
+            if dist_matrix[last_point][end] == float('inf'):
+                continue
+
             total_dist = dp[full_mask][i] + dist_matrix[last_point][end]
 
             if total_dist < best_dist:
                 best_dist = total_dist
                 best_last = i
+
+        #Si pas de chemin trouvé
+        if best_last == -1:
+            return None,float('inf'),False
+        
         #Reconstruction
         tour = [start]
         mask = full_mask
@@ -325,9 +349,9 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
 
             if current_idx >=0:
                 mask &=~(1 << current_idx)
-
             current_idx = prev_idx
         tour.append(end)
+
         #VERIFICATION DE LA RECONSTRUCTION
         for i in range(len(tour)-1):
             if dist_matrix[tour[i]][tour[i+1]] == float('inf'):
@@ -336,6 +360,72 @@ class OptimalDirectionalSolver(WarehouseTSPSolver):
             
         return tour, best_dist,True
     #_held_karp_atsp_different_ends
+
+    def _cheapest_insertion_3opt(self, dist_matrix, start,end):
+        """
+        Cheapest Insertion + Optimisation 3-opt (peut être mieux que Nearest Neighbor)
+        """
+        n = dist_matrix.shape[0]
+        points_to_visit = [i for i in range(n) if i not in [start,end]]
+
+        if not points_to_visit:
+            return [start,end], dist_matrix[start][end]
+        
+        #Stratégie: choisir le point le plus proche du départ pour commencer
+        import random
+        #Trie par distance au départ
+        points_to_visit.sort(key=lambda x: dist_matrix[start][x] if dist_matrix[start][x] != float('inf') else float('inf'))
+
+        #Prendre le premier point accessible
+        first_point = None
+        for pt in points_to_visit:
+            if dist_matrix[start][pt] != float('inf'):
+                first_point = pt
+                break
+        if first_point is None:
+            #Aucun point accessible depuis le départ -> problème insolubre
+            return None,float('inf')
+        
+        #Initialisation 
+        tour = [start, first_point,end]
+        remaining_points = [p for p in points_to_visit if p != first_point] # les points restants
+
+        #Cheapest insertion
+        for point in remaining_points:
+            best_position = -1
+            best_cost_increase = float('inf')
+
+            for i in range(1, len(tour)):
+                prev, next_node = tour[i-1], tour[i]
+
+                #Vérifier les arcs
+                if (dist_matrix[prev][point] == float('inf') or
+                    dist_matrix[point][next_node] == float('inf') or 
+                    dist_matrix[prev][next_node] == float('inf')) :
+                    continue
+
+                current_cost = dist_matrix[prev][next_node]
+                new_cost = dist_matrix[prev][point] + dist_matrix[point][next_node]
+                cost_increase = new_cost - current_cost
+
+                if cost_increase < best_cost_increase:
+                    best_cost_increase = cost_increase
+                    best_position = i
+            
+            if best_position != -1:
+                tour.insert(best_position,point)
+            else:
+                #Point non insertable (à cause des arcs inf)
+                #Essayer à la fin avant l'arrivée
+                if (dist_matrix[tour[-2]][point] != float('inf') and dist_matrix[point][end] != float('inf')):
+                    tour.insert(-1,point)
+        #Optimisation 3-opt (seulement si le tour est valide)
+        if len(tour) == n:
+            tour = self._three_opt(tour, dist_matrix)
+        
+        distance = self.calculate_tour_distance(tour, dist_matrix)
+        return tour, distance
+    
 
     def _lin_kernighan_atsp(self,dist_matrix,start,end):
         """ 
