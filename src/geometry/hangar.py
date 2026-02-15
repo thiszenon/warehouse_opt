@@ -334,6 +334,14 @@ class Hangar:
         """Cette methode verifie si le deplacement vertical respecte le sens de circulation"""
         if allee is None:
             return True
+        
+        #CAS SPecial : mouvement horizontal (y_start == y_end)
+        if abs(y_start - y_end) < 0.1:
+            if y_start in self.niveaux.values():
+                return True
+            else:
+                return False
+            
     
         # Déterminer la ZONE de l'allée
         if len(allee) == 2:  # Allée spéciale
@@ -364,14 +372,17 @@ class Hangar:
                 return code_allee
         return code_allee
     #end get_allee_base
-
-    def distance(self,p,q):
+    
+    #def distance(self,p,q):
         """
         Distance admissible entre deux points p et q en
         respectant les contraintes du hangar
         :p,q : tuples(allee, n)
         """
+        
 
+        #ANCIENNE METHODES
+        
         print(f"\n=== DEBUG distance {p} -> {q}====")
         print(f"Points: {p}={self.points[p]}, {q}={self.points[q]}")
 
@@ -456,6 +467,85 @@ class Hangar:
             return float('inf')
         return min(distances)
     #end distance
+    #TODO: Nouvelle distance
+    def distance(self,p,q):
+        if p ==q :
+            return 0.0
+        
+        start_allee  = p[0]
+        start_y = self.points[p][1]
+        target_allee = q[0]
+        target_y = self.points[q][1]
+
+        import heapq
+        dist = {}
+        pq = []
+        best_found = float('inf') 
+
+        dist[(start_allee,start_y)] = 0
+        heapq.heappush(pq, (0,start_allee,start_y))
+
+        while pq:
+            d, allee, y = heapq.heappop(pq)
+            # DEBUG: voir tous les états
+            
+            #Optimisation : si d dejà > meilleure trouvée , on arrete
+            if d > best_found:
+                continue
+
+            if d > dist.get((allee,y), float('inf')):
+                continue
+
+            if allee == target_allee and abs(y - target_y) < 1.0:
+                """if d < best_found:
+                    best_found = d
+                    print(f"CIBLE ATTEINTE ! distance = {d}")
+
+                continue"""
+                return d 
+
+            
+            sens = self.sens[allee]
+            
+
+            #Mouvement vertical (monter)
+            if sens == 1:
+                for y_cible in [self.niveaux['N2'] , self.niveaux['N3'], target_y]:
+                    
+                    if y_cible > y and self._accessible_verticalement(y,y_cible,allee):
+                        new_d = d + (y_cible - y)
+                        if new_d < dist.get((allee,y_cible), float('inf')):
+                            dist[(allee,y_cible)] = new_d
+                            heapq.heappush(pq, (new_d,allee, y_cible))
+
+            #Mouvement vertical (descente)
+            if sens == -1:
+                for y_cible in [self.niveaux['N2'], self.niveaux['N1'], target_y]:
+                    if y_cible < y and self._accessible_verticalement(y, y_cible,allee):
+                        
+                        new_d = d + (y - y_cible)
+                        if new_d < dist.get((allee,y_cible), float('inf')):
+                            dist[(allee,y_cible)] = new_d
+                            heapq.heappush(pq, (new_d,allee,y_cible))
+            
+            #Mouvement horizontal (changer d'allée) - uniquement aux nieaux
+            if y in self.niveaux.values():
+                #verifier qu'on peut être à ce niveau dans l'allée courante
+                for autre_allee in self.allees_toutes:
+                    if autre_allee == allee:
+                        continue
+                    #verifier qu'on peut être à ce niveau dans l'autre allée
+                    if self._accessible_verticalement(y,y,autre_allee):
+                        d_horiz = self.distance_centres_allees(allee,autre_allee)
+                        new_d = d + d_horiz
+                        if new_d < dist.get((autre_allee,y), float('inf')):
+                            dist[(autre_allee,y)] = new_d
+                            heapq.heappush(pq, (new_d, autre_allee,y))
+
+        return best_found
+
+
+
 
 
     #TODO nouvelle méthode de calcul de la distance entre le cente des allées
@@ -469,6 +559,7 @@ class Hangar:
         centre2 = self.centres[base2]
         return abs(centre2 - centre1) #5.0
     #end distance_centres_allees
+
 
     def tracer_chemin(self, p,q,ax=None, couleur='green', style='-', alpha=0.7, linewidth=2):
         """
@@ -533,6 +624,8 @@ class Hangar:
             y_vals = [point[1] for point in meilleur['chemin']]
             ax.plot(x_vals, y_vals, style, color=couleur, linewidth=2, alpha=alpha, marker='o',markersize=4, markerfacecolor=couleur)
         return meilleur
+
+        
     
 
 
@@ -573,11 +666,11 @@ if __name__ == "__main__":
     for (allee, n), (x, y) in sorted(hangar.points.items()):
         print(f"{allee}{n}: ({x:.1f}, {y:.1f}) m")
 
-    p = ('BB',14)
-    q= ('B',10)
-    print("Distance BB14 -> B10 : ", hangar.distance(p,q))
-    print("Distance B10 -> BB14: ", hangar.distance(q,p))
-    print("Coordonnées du point C29=", hangar.calculer_coordonnees('BB',14))
+    p = ('B',10)
+    q= ('BB',14)
+    print("Distance BB14 -> B10 : ", hangar.distance(q,p))
+    print("Distance B10 -> BB14: ", hangar.distance(p,q))
+    print("Coordonnées du point BB14=", hangar.calculer_coordonnees('BB',14))
     print("Coordonnées du point B10=", hangar.calculer_coordonnees('B',10))
 
 
