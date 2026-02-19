@@ -10,7 +10,11 @@ import networkx as nx
 from typing import List, Tuple, Dict, Optional, Set
 import json
 
-from src.geometry import hangar
+from src.geometry import Hangar
+from src.data.commandes import get_commandes
+from src.geometry.hangar_with_depot import HangarWithDepot
+from src.graph.graph_collect_depot import GraphCollectWithDepot
+
 
 class GraphCollect:
     """
@@ -53,6 +57,10 @@ class GraphCollect:
         #end for
         return matrice
     #end __construire_matrice
+
+    def afficher_matrice(self,matrice):
+        print("Affichage de la matrice...\n")
+        print(matrice)
 
     def _construire_graphe(self) -> nx.DiGraph:
         """
@@ -577,4 +585,35 @@ class GraphCollect:
 
     def __str__(self):
         return f"GraphCollect({self.n} points: {self.commande})"
+    
+
+
+if __name__ == "__main__":
+
+    warehouse = Hangar(
+        90,
+        5,
+        2
+    )
+    warehouse_depot = HangarWithDepot(90,5,2)
+
+
+    commande = get_commandes()
+    warehouse.placer_commande(commande)
+    
+
+
+    graphe = GraphCollect(warehouse,commande)
+    grapheDepot =GraphCollectWithDepot(warehouse_depot,commande)
+
+
+    matrice = graphe.matrice
+    graphe.afficher_matrice(matrice)
+    #HANGAR AVEC UN DEPOT
+    print("\n Utilisation de la classe Hangar Avec un depot")
+    pointsDepot = [p for p in grapheDepot.points_complets]
+    print(pointsDepot,end="\n")
+    matriceDepot = grapheDepot.matrice
+    grapheDepot.afficher_matrice(matriceDepot)
+
 

@@ -3,6 +3,9 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from typing import List, Tuple
+from src.geometry.hangar_with_depot import HangarWithDepot
+from src.data.commandes import get_commandes
+
 
 class GraphCollectWithDepot:
     """
@@ -42,6 +45,12 @@ class GraphCollectWithDepot:
                     matrice[i][j] = self.hangar.distance_special(p, q)
         
         return matrice
+    
+    #TODO: Afficher la mtrice des distances 
+    def afficher_matrice(self,matrice):
+        print("Afficher la matrice des distances: \n")
+        print(matrice)
+    #end afficher_matrice
     
     def _construire_graphe(self) -> nx.DiGraph:
         """Construit le graphe NetworkX"""
@@ -161,3 +170,20 @@ class GraphCollectWithDepot:
 
     ####Méthodes Utilitaires 
     
+if __name__ == "__main__":
+    hangar = HangarWithDepot(
+        Longueur=90, 
+        largeur_allee=5, 
+        r=2,
+        depot_position=(25, -5),   # Devant à droite
+        arrival_position=(15, -5)  # Devant à gauche
+    )
+    commande = get_commandes()
+
+    #graphe 
+    graphe = GraphCollectWithDepot(hangar,commande)
+    matrice = graphe.matrice
+
+
+    graphe.afficher_matrice(matrice)
+

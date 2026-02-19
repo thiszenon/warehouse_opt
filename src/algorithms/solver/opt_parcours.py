@@ -1070,8 +1070,13 @@ class OptParcoursSolver(WarehouseTSPSolver):
         """
         Distance avec estimation si chemin impossible
         """
-        id1 = ("TEMP", 9991)
-        id2 = ("TEMP", 9992)
+        #Trouver l'allée la plus proche pour chaque point
+        allee1 = self._trouver_allee_plus_proche(point1)
+        allee2 = self._trouver_allee_plus_proche(point2)
+        
+        #Créer des identifiants avec de vraies allées
+        id1 = (allee1, -9991)
+        id2 = (allee2, -9992)
         
         self.hangar.points[id1] = point1
         self.hangar.points[id2] = point2
@@ -1091,8 +1096,8 @@ class OptParcoursSolver(WarehouseTSPSolver):
             
             #pénalité selon la configuration (voir le document)
             #Si changement d'allée nécessaire: pénalité forte
-            allee1 = self._trouver_allee_plus_proche(point1)
-            allee2 = self._trouver_allee_plus_proche(point2)
+            #allee1 = self._trouver_allee_plus_proche(point1)
+            #allee2 = self._trouver_allee_plus_proche(point2)
 
             if allee1 != allee2:
                 #changement d'allée : nécessite un niveau intermédiaire

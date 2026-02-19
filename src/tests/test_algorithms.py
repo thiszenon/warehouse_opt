@@ -1080,7 +1080,7 @@ def main():
     #solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='optimal_dir',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='opt_parcours',display_plot=True)
     
     """# Analyse comparative
     print("\n" + "=" * 70)
