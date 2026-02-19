@@ -139,7 +139,7 @@ class OptParcoursSolver(WarehouseTSPSolver):
         if not self.noeuds:
             return {'success': False, 'message': "Aucune partition"}
         
-        # Pour chaque partition, préparer plusieurs options
+        # Préparer les options
         toutes_options = []
         for noeud in self.noeuds:
             options = self._points_acces_realistes(noeud)
@@ -155,39 +155,63 @@ class OptParcoursSolver(WarehouseTSPSolver):
         while non_visitees:
             meilleur_idx = None
             meilleure_option = None
-            meilleure_distance = float('inf')
+            meilleure_score = float('inf')
             
-            # Chercher la partition + option la plus accessible
+            # Pour chaque partition non visitée
             for idx in non_visitees:
                 for option in toutes_options[idx]:
-                    dist = self._distance_contrainte(position, option['entree'][1])
-                    
-                    # Choisir la meilleure option accessible
-                    if dist < meilleure_distance and dist != float('inf'):
-                        meilleure_distance = dist
+                    #coût pour atteindre cette partition
+                    dist_entree = self._distance_contrainte(position, option['entree'][1])
+
+                    if dist_entree == float('inf'):
+                        continue
+
+                    #Coût pour traverser la partition
+                    dist_traversee =  option['distance_interne']
+
+                    #Si c'est la derniere partition
+                    if len(non_visitees) == 1:
+                        dist_retour = self._distance_contrainte(option['sortie'][1],arrivee)
+                        score = dist_entree + dist_traversee + dist_retour
+                    else:
+                        #Estimation du coût pour la suite
+                        #On prend la meilleure sortie possible vers les partitions restantes
+                        meilleure_sortie = float('inf')
+                        for j in non_visitees:
+                            if j == idx:
+                                continue
+                            for opt_j in toutes_options[j]:
+                                d = self._distance_contrainte(option['sortie'][1], opt_j['entree'][1])
+                                if d < meilleure_sortie:
+                                    meilleure_sortie = d
+                                #end if
+                            #end for
+                        score = dist_entree + dist_traversee + meilleure_sortie
+                    if score < meilleure_score:
+                        meilleure_score = score
                         meilleur_idx = idx
                         meilleure_option = option
+                    #end if
             
             if meilleur_idx is None:
                 # Si aucune option n'est accessible, échec
                 break
             
-            # Visiter avec l'option choisie
-            visitees.append(meilleur_idx)
-            non_visitees.remove(meilleur_idx)
-            
+            # Visiter la partition choisie
             noeud = self.noeuds[meilleur_idx]
-            distance_totale += meilleure_distance + meilleure_option['distance_interne']
+            distance_totale += meilleure_score if len(non_visitees) == 1 else dist_entree + dist_traversee
             position = meilleure_option['sortie'][1]
             ordre_points.extend(noeud['points'])
+            visitees.append(meilleur_idx)
+            non_visitees.remove(meilleur_idx)
 
-            #DEBUG----
-            print(f"  Test {noeud['id']}: {position} → {option['entree'][1]}")
-            print(f"    Distance réelle: {dist} {'(IMPOSSIBLE)' if dist == float('inf') else ''}")
-        
+        #Ajouter le retour
+        if non_visitees:
+            distance_totale += self._distance_contrainte(position,arrivee)
+
         # Résultat
         return {
-            'success': len(visitees) > 0,
+            'success': len(visitees) == len(self.noeuds),
             'ordre_points': ordre_points,
             'distance': distance_totale
         }

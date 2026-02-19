@@ -208,6 +208,7 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
 
     # Dans test_avec_depot_arrivee_differents(), APRÈS avoir créé graphe :
 
+    """ 
     print("\n🔍 DEBUG MATRICE COMPLÈTE POUR OPTIMAL_DIR")
 
     # Trouver les indices de BB14 et B10 dans la matrice
@@ -247,7 +248,7 @@ def test_avec_depot_arrivee_differents(algorithm_type='farthest', display_plot=T
                 print(f"  B10 → {pt} = inf (PROBLÈME!)")
             else:
                 print(f"  B10 → {pt} = {dist:.1f}")
-    
+    """
     # 4. Vérifier que le point dépôt ≠ arrivée
     if hangar.depot_position == hangar.arrival_position:
         print("⚠️ Attention: dépôt et arrivée sont identiques!")
@@ -1080,7 +1081,7 @@ def main():
     #solution1 = test_avec_depot_fixe()
     
     # Test 2: Dépôt ≠ Arrivée
-    solution2 = test_avec_depot_arrivee_differents(algorithm_type='opt_parcours',display_plot=True)
+    solution2 = test_avec_depot_arrivee_differents(algorithm_type='first_solver',display_plot=True)
     
     """# Analyse comparative
     print("\n" + "=" * 70)
