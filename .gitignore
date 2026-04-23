@@ -1,4 +1,24 @@
-".venv" 
-".venv/" 
-"__pycache__/" 
-".vscode/"
+# ===== Python =====
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Editors =====
+.vscode/
+.idea/
+
+# ===== Logs =====
+*.log
+
+# ===== Frontend =====
+node_modules/
+dist/
+build/
