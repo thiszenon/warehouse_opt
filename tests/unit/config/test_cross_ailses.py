@@ -21,7 +21,7 @@ def test_negative_position_is_invalid():
 
 def test_invalid_type():
       crossAisle = CrossAisleSpec(
-            position=-20.0, # should fail
+            position=-20.0, 
             aisle_type = "central"
       )
       with pytest.raises(AssertionError):
